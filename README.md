@@ -91,6 +91,38 @@ npm run demo:feedback   # 反馈闭环演示
 npm run demo:memory     # 记忆系统演示
 ```
 
+## Web 管理面板
+
+启动 Web 管理面板，用于查看系统状态、凭据配置、运行参数和记忆条目：
+
+```bash
+harness web
+# 管理面板即启动在 http://localhost:3456
+```
+
+自定义端口：
+
+```bash
+harness web --port 8080
+```
+
+**线上部署 URL**：`http://localhost:3456`（本地运行）
+
+部署到云平台（Vercel / Render / Railway / 阿里云 / 腾讯云）：
+
+```bash
+# 使用 Docker 部署
+docker build -t coding-agent-harness .
+docker run -d -p 3456:3456 -v $(pwd):/workspace -e OPENAI_API_KEY=$OPENAI_API_KEY coding-agent-harness web
+```
+
+## CI/CD
+
+项目配置了 GitHub Actions（`.github/workflows/ci.yml`）和 GitLab CI（`.gitlab-ci.yml`），每次 push 自动运行 `unit-test` job。
+
+- **GitHub Actions**：`unit-test` + `build` 两个 job，测试通过后构建 Docker 镜像
+- **GitLab CI**：`unit-test` + `build` 两个 stage，使用 node:20-alpine 镜像
+
 ## 安全
 
 - API Key 存储在操作系统钥匙串中（Windows 凭据管理器 / macOS 钥匙串 / Linux Secret Service）
