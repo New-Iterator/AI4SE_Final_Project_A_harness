@@ -4,9 +4,10 @@ stages:
 
 unit-test:
   stage: test
-  image: node:20-alpine
+  image: node:20
   script:
     - npm ci
+    - npm run build
     - npm test
   cache:
     key: ${CI_COMMIT_REF_SLUG}
@@ -15,7 +16,7 @@ unit-test:
 
 build:
   stage: build
-  image: node:20-alpine
+  image: node:20
   needs:
     - unit-test
   script:
