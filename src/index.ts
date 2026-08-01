@@ -61,8 +61,12 @@ program
     memory.close();
   });
 
-program
-  .command('key set <provider>')
+const keyCmd = program
+  .command('key')
+  .description('API Key 管理');
+
+keyCmd
+  .command('set <provider>')
   .description('设置 API Key (openai|anthropic|openai-compat)')
   .action(async (provider: string) => {
     const rl = require('readline').createInterface({ input: process.stdin, output: process.stdout });
@@ -89,16 +93,16 @@ program
     });
   });
 
-program
-  .command('key delete <provider>')
+keyCmd
+  .command('delete <provider>')
   .description('删除指定供应商的 API Key')
   .action(async (provider: string) => {
     await credManager.delete(provider);
     console.log(chalk.green(`[Harness] ${provider} API Key 已删除`));
   });
 
-program
-  .command('key status')
+keyCmd
+  .command('status')
   .description('查看 API Key 配置状态')
   .action(async () => {
     const status = await credManager.status();

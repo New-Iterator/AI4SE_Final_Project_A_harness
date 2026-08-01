@@ -39,6 +39,8 @@ harness run "实现一个带测试的计算器函数"
 
 ```bash
 harness key set openai
+harness key status       # 查看配置状态
+harness key delete openai # 删除指定 Key
 ```
 
 ### 环境变量（备选方案）
