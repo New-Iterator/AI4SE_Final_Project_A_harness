@@ -187,3 +187,57 @@ SPEC.md 在冷启动条件下足以支撑独立的 Task 实现。Agent 在 2 个
 2. **测试文件位置**：因 vitest 在中文路径下的模块解析问题，将 `tests/core/llm/` 下的测试文件移至 `tests/core/` 目录。
 
 3. **中文化**：所有用户可见的字符串（CLI 输出、错误消息、系统提示、README）从英文改为中文。
+
+4. **CLI 命令结构**：原设计 `harness key set` / `key delete` / `key status` 为三个独立顶级命令，在 commander 中出现冲突（"cannot add command 'key' as already have command 'key'"）。修改为 `harness key` 子命令结构（`key set` / `key delete` / `key status`），符合 commander 的命令层级规范。
+
+5. **CI 镜像选择**：`node:20-alpine` 缺少编译原生模块（better-sqlite3、keytar）所需的 build 工具，CI 运行失败。改为 `node:20`（Debian 基础镜像），CI 成功后增加 `npm run build` 步骤确保 TypeScript 编译正确。
+
+6. **线上部署**：在 Render 上部署 Web 管理面板，URL 为 `https://ai4se-final-project-a-harness.onrender.com`。Render 免费版有休眠机制，首次访问需 1-2 分钟唤醒。
+
+7. **Web UI 扩展**：原 SPEC 中设计为纯 CLI，后根据通用要求增加了 Web 管理面板（`harness web` 命令），提供系统状态、凭据配置、记忆条目管理的可视化界面。
+
+---
+
+## 7. CI/CD 与部署过程
+
+### CI/CD 配置
+
+- **GitLab CI**（`.gitlab-ci.yml`）：包含 `unit-test` 和 `build` 两个 stage，使用 `node:20` 镜像
+- **GitHub Actions**（`.github/workflows/ci.yml`）：包含 `unit-test` 和 `build` 两个 job，`build` 依赖 `unit-test` 通过
+- **首次 CI 运行失败**：Alpine 镜像缺少原生编译工具，导致 `npm ci` 失败
+- **修复后 CI 通过**：切换为 `node:20` 镜像，`unit-test` job（含 `npm ci` + `npm run build` + `npm test`）全部通过
+
+### 线上部署
+
+- **平台**：Render（免费版）
+- **部署方式**：从 GitHub 仓库导入，自动检测 Node.js 项目
+- **Build Command**：`npm ci && npm run build`
+- **Start Command**：`node dist/src/index.js web`
+- **部署 URL**：`https://ai4se-final-project-a-harness.onrender.com`
+- **已知问题**：免费版 15 分钟无流量后休眠，首次访问需等待唤醒
+
+### Git 工作流
+
+- **GitLab**（主仓库）：`https://git.nju.edu.cn/Iterator/ai4se_final_project_a_harness`
+- **GitHub**（镜像/部署源）：`https://github.com/New-Iterator/AI4SE_Final_Project_A_harness`
+- **Commit 总数**：14 次，涵盖从脚手架到最终文档的完整开发过程
+- **分支策略**：单 master 分支，无 PR（个人项目）
+
+---
+
+## 8. 最终交付物清单与验证
+
+| # | 交付物 | 路径 | 验证方式 |
+|---|--------|------|---------|
+| 1 | SPEC.md | 根目录 | 12 章节完整设计文档 |
+| 2 | PLAN.md | 根目录 | 22 Task 详细实现计划 |
+| 3 | SPEC_PROCESS.md | 根目录 | 本文档 |
+| 4 | 完整源代码 | src/ (32 文件) | 20 测试文件 77 测试全部通过 |
+| 5 | Dockerfile | 根目录 | `docker build` 可构建 |
+| 6 | README.md | 根目录 | 含全部必需章节 |
+| 7 | AGENT_LOG.md | 根目录 | 完整时间线记录 |
+| 8 | `.gitlab-ci.yml` | 根目录 | `unit-test` job 已 pass |
+| 9 | CI/CD 执行记录 | GitLab Pipelines | 最后一次 CI 状态 passed |
+| 10 | REFLECTION.md | 根目录 | 2500+ 字反思报告 |
+| 11 | 线上部署 URL | Render | `https://ai4se-final-project-a-harness.onrender.com` |
+| 12 | 机制演示 | demos/ (3 脚本) | guard/feedback/memory 演示全部通过 |
