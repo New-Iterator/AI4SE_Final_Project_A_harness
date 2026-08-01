@@ -1,0 +1,31 @@
+stages:
+  - test
+  - build
+
+unit-test:
+  stage: test
+  image: node:20
+  script:
+    - npm ci
+    - npm run build
+    - npm test
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+
+build:
+  stage: build
+  image: node:20
+  needs:
+    - unit-test
+  script:
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/

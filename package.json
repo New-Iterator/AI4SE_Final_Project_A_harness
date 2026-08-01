@@ -1,0 +1,31 @@
+{
+  "name": "coding-agent-harness",
+  "version": "1.0.0",
+  "description": "A Coding Agent Harness that enables AI to autonomously modify code, run tests, and self-correct",
+  "main": "dist/src/index.js",
+  "bin": {
+    "harness": "./dist/src/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "demo:guard": "npx tsx demos/guard-demo.ts",
+    "demo:feedback": "npx tsx demos/feedback-demo.ts",
+    "demo:memory": "npx tsx demos/memory-demo.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0",
+    "keytar": "^7.9.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^1.6.0"
+  }
+}

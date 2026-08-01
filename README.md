@@ -1,93 +1,139 @@
-# AI4SE_Final_Project_A_Harness
+# Coding Agent Harness
 
+一个基于 TypeScript/Node.js 的编码智能体框架（Coding Agent Harness），使 AI 能够自主修改代码、运行测试并根据测试结果自我修正。
 
-
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+## 架构
 
 ```
-cd existing_repo
-git remote add origin https://git.nju.edu.cn/Iterator/ai4se_final_project_a_harness.git
-git branch -M main
-git push -uf origin main
+Agent = LLM + Harness
+
+Harness = 上下文组装器 -> LLM 调用 -> 动作解析器 -> 护栏 -> 执行器 -> 反馈校验器 -> 循环
 ```
 
-## Integrate with your tools
+## 安装
 
-* [Set up project integrations](https://git.nju.edu.cn/Iterator/ai4se_final_project_a_harness/-/settings/integrations)
+### npm
 
-## Collaborate with your team
+```bash
+npm install -g coding-agent-harness
+```
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+### Docker
 
-## Test and Deploy
+```bash
+docker build -t coding-agent-harness .
+docker run -v $(pwd):/workspace -e OPENAI_API_KEY=$OPENAI_API_KEY coding-agent-harness run "你的任务"
+```
 
-Use the built-in continuous integration in GitLab.
+## 使用方法
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+```bash
+harness run "实现一个带测试的计算器函数"
+```
 
-***
+## API Key 配置
 
-# Editing this README
+### 安全方式（推荐）
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+使用 `harness key set` 将密钥存储在操作系统钥匙串中：
 
-## Suggestions for a good README
+```bash
+harness key set openai
+harness key status       # 查看配置状态
+harness key delete openai # 删除指定 Key
+```
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+### 环境变量（备选方案）
 
-## Name
-Choose a self-explaining name for your project.
+设置以下环境变量。注意：此方式以明文形式存储在 shell 环境中。
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+- `OPENAI_COMPAT_API_KEY`
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+## 配置文件
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+在项目根目录创建 `.harnessrc.json`：
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+```json
+{
+  "llm": { "provider": "openai", "model": "gpt-4o", "maxTokens": 4096 },
+  "loop": { "maxIterations": 50, "maxConsecutiveFailures": 3 },
+  "tools": { "workspaceRoot": "." }
+}
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## 目录结构
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+```
+src/
+  index.ts              - CLI 入口
+  types.ts              - 共享类型定义
+  core/
+    loop.ts             - 主循环
+    parser.ts           - 动作解析器
+    guard.ts            - 护栏系统
+    executor.ts         - 动作执行器
+    feedback.ts         - 反馈校验器
+    llm/                - LLM 抽象层（mock、OpenAI、Anthropic、兼容格式）
+  memory/               - 记忆系统（L1/L2/L3 三层记忆）
+  tools/                - 工具实现（读文件/写文件/shell/运行测试）
+  config/               - 配置加载器
+  credentials/          - 凭据管理
+tests/                  - 单元测试（mock LLM 驱动）
+demos/                  - 机制演示脚本
+```
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+## 测试
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+```bash
+npm test                # 运行所有测试
+npm run demo:guard      # 护栏演示
+npm run demo:feedback   # 反馈闭环演示
+npm run demo:memory     # 记忆系统演示
+```
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+## Web 管理面板
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+启动 Web 管理面板，用于查看系统状态、凭据配置、运行参数和记忆条目：
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+```bash
+harness web
+# 管理面板即启动在 http://localhost:3456
+```
 
-## License
-For open source projects, say how it is licensed.
+自定义端口：
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+```bash
+harness web --port 8080
+```
+
+**线上部署 URL**：**[https://ai4se-final-project-a-harness.onrender.com](https://ai4se-final-project-a-harness.onrender.com)**
+
+部署到云平台（Vercel / Render / Railway / 阿里云 / 腾讯云）：
+
+```bash
+# 使用 Docker 部署
+docker build -t coding-agent-harness .
+docker run -d -p 3456:3456 -v $(pwd):/workspace -e OPENAI_API_KEY=$OPENAI_API_KEY coding-agent-harness web
+```
+
+## CI/CD
+
+项目配置了 GitHub Actions（`.github/workflows/ci.yml`）和 GitLab CI（`.gitlab-ci.yml`），每次 push 自动运行 `unit-test` job。
+
+- **GitHub Actions**：`unit-test` + `build` 两个 job，测试通过后构建 Docker 镜像
+- **GitLab CI**：`unit-test` + `build` 两个 stage，使用 node:20-alpine 镜像
+
+## 安全
+
+- API Key 存储在操作系统钥匙串中（Windows 凭据管理器 / macOS 钥匙串 / Linux Secret Service）
+- 危险命令（rm -rf、DROP TABLE 等）执行前需人工确认
+- 文件操作限定在工作区范围内
+- Key 绝不写入日志或提交到 Git
+
+## 已知限制
+
+- keytar 在某些 Linux 发行版上可能不可用（自动降级为环境变量方式）
+- better-sqlite3 需要原生编译（大多数平台有预编译二进制文件）
+- L3 向量存储使用内存中的 Float32Array，不适用于超大代码库
