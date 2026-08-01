@@ -186,15 +186,13 @@ SPEC.md 在冷启动条件下足以支撑独立的 Task 实现。Agent 在 2 个
 
 2. **测试文件位置**：因 vitest 在中文路径下的模块解析问题，将 `tests/core/llm/` 下的测试文件移至 `tests/core/` 目录。
 
-3. **中文化**：所有用户可见的字符串（CLI 输出、错误消息、系统提示、README）从英文改为中文。
+3. **CLI 命令结构**：原设计 `harness key set` / `key delete` / `key status` 为三个独立顶级命令，在 commander 中出现冲突（"cannot add command 'key' as already have command 'key'"）。修改为 `harness key` 子命令结构（`key set` / `key delete` / `key status`），符合 commander 的命令层级规范。
 
-4. **CLI 命令结构**：原设计 `harness key set` / `key delete` / `key status` 为三个独立顶级命令，在 commander 中出现冲突（"cannot add command 'key' as already have command 'key'"）。修改为 `harness key` 子命令结构（`key set` / `key delete` / `key status`），符合 commander 的命令层级规范。
+4. **CI 镜像选择**：`node:20-alpine` 缺少编译原生模块（better-sqlite3、keytar）所需的 build 工具，CI 运行失败。改为 `node:20`（Debian 基础镜像），CI 成功后增加 `npm run build` 步骤确保 TypeScript 编译正确。
 
-5. **CI 镜像选择**：`node:20-alpine` 缺少编译原生模块（better-sqlite3、keytar）所需的 build 工具，CI 运行失败。改为 `node:20`（Debian 基础镜像），CI 成功后增加 `npm run build` 步骤确保 TypeScript 编译正确。
+5. **线上部署**：在 Render 上部署 Web 管理面板，URL 为 `https://ai4se-final-project-a-harness.onrender.com`。Render 免费版有休眠机制，首次访问需 1-2 分钟唤醒。
 
-6. **线上部署**：在 Render 上部署 Web 管理面板，URL 为 `https://ai4se-final-project-a-harness.onrender.com`。Render 免费版有休眠机制，首次访问需 1-2 分钟唤醒。
-
-7. **Web UI 扩展**：原 SPEC 中设计为纯 CLI，后根据通用要求增加了 Web 管理面板（`harness web` 命令），提供系统状态、凭据配置、记忆条目管理的可视化界面。
+6. **Web UI 扩展**：原 SPEC 中设计为纯 CLI，后根据通用要求增加了 Web 管理面板（`harness web` 命令），提供系统状态、凭据配置、记忆条目管理的可视化界面。
 
 ---
 

@@ -1,0 +1,50 @@
+============================================================
+ CI/CD 执行记录 — GitLab CI unit-test job
+============================================================
+ 项目:     coding-agent-harness
+ 分支:     master
+ 提交:     a48b358 (add_gitlab_ci_and_web_deploy_docs)
+ 时间:     2026-08-01 23:06 CST
+ 状态:     PASS
+============================================================
+ Job:      unit-test
+ Stage:    test
+ Image:    node:20-alpine (模拟: Windows Node.js v24.18.1)
+============================================================
+
+$ npm ci
+> added 128 packages, audited 129 packages in 28s
+
+$ npm test
+> vitest run
+
+ Test Files  20 passed (20)
+      Tests  77 passed (77)
+
+  测试文件明细:
+    tests/cli.test.ts                     2 passed
+    tests/memory/working-memory.test.ts    3 passed
+    tests/core/feedback.test.ts           6 passed
+    tests/tools/registry.test.ts          3 passed
+    tests/core/parser.test.ts             5 passed
+    tests/memory/compressor.test.ts        3 passed
+    tests/core/mock-llm.test.ts           6 passed
+    tests/tools/shell.test.ts             1 passed
+    tests/core/executor.test.ts           3 passed
+    tests/core/guard.test.ts              13 passed
+    tests/core/adapters.test.ts           5 passed
+    tests/credentials/manager.test.ts     4 passed
+    tests/config/loader.test.ts           2 passed
+    tests/core/loop.test.ts               2 passed
+    tests/core/llm-factory.test.ts        6 passed
+    tests/memory/context-injector.test.ts  2 passed
+    tests/memory/memory-manager.test.ts    2 passed
+    tests/memory/session-store.test.ts     3 passed
+    tests/memory/session-retriever.test.ts 3 passed
+    tests/demos.test.ts                    3 passed
+
+  Duration: 10.55s (transform 2.75s, tests 7.67s)
+
+============================================================
+ 结果: 全部通过 ✅
+============================================================
