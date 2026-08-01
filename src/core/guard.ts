@@ -7,7 +7,7 @@ export interface GuardResult {
   reason?: string;
 }
 
-const DANGEROUS_PATTERNS: Array<{ name: string; pattern: RegExp }> = [
+const DEFAULT_DANGEROUS_PATTERNS: Array<{ name: string; pattern: RegExp }> = [
   { name: 'rm -rf root', pattern: /rm\s+-rf\s+\/(\*|$|\s)/ },
   { name: 'rm -rf home', pattern: /rm\s+-rf\s+~/ },
   { name: 'rm -rf recursive', pattern: /rm\s+-rf\s+\./ },
@@ -20,10 +20,30 @@ const DANGEROUS_PATTERNS: Array<{ name: string; pattern: RegExp }> = [
   { name: 'fork bomb', pattern: /:\(\)\s*\{/ },
 ];
 
-export function checkGuard(action: Action, workspaceRoot: string): GuardResult {
+export function checkGuard(
+  action: Action,
+  workspaceRoot: string,
+  extraBlockedPatterns: string[] = [],
+  allowedCommands: string[] = []
+): GuardResult {
   if (action.tool === 'shell' && action.args?.command) {
     const cmd = action.args.command as string;
-    for (const pattern of DANGEROUS_PATTERNS) {
+
+    if (allowedCommands.length > 0) {
+      const baseCmd = cmd.split(/\s+/)[0].replace(/^\.\//, '');
+      if (!allowedCommands.some(allowed => baseCmd === allowed || baseCmd.startsWith(allowed + ' '))) {
+        return { blocked: true, requiresApproval: false, reason: `命令不在白名单中: ${baseCmd}` };
+      }
+    }
+
+    const allPatterns = [...DEFAULT_DANGEROUS_PATTERNS];
+    for (const bp of extraBlockedPatterns) {
+      try {
+        allPatterns.push({ name: '自定义规则', pattern: new RegExp(bp, 'i') });
+      } catch { /* ignore invalid regex */ }
+    }
+
+    for (const pattern of allPatterns) {
       if (pattern.pattern.test(cmd)) {
         return { blocked: false, requiresApproval: true, reason: `${pattern.name}: ${cmd}` };
       }

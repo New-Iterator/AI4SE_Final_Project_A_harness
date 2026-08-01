@@ -55,6 +55,6 @@ describe('runLoop', () => {
     const registry = new ToolRegistry();
     const result = await runLoop('task', config, mock, registry);
     expect(result.success).toBe(false);
-    expect(result.reason).toContain('max_iterations');
+    expect(result.reason).toContain('最大迭代');
   });
 });
