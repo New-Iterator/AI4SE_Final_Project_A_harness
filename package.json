@@ -2,9 +2,9 @@
   "name": "coding-agent-harness",
   "version": "1.0.0",
   "description": "A Coding Agent Harness that enables AI to autonomously modify code, run tests, and self-correct",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "bin": {
-    "harness": "./dist/index.js"
+    "harness": "./dist/src/index.js"
   },
   "scripts": {
     "build": "tsc",

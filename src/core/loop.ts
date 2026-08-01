@@ -1,6 +1,6 @@
 import type { LoopResult, Message } from '../types';
 import type { Config } from '../config/types';
-import type { LLMProvider, ToolDefinition } from './llm/types';
+import type { LLMProvider, ToolDefinition, ChatResponse } from './llm/types';
 import type { ToolRegistry } from '../tools/registry';
 import type { MemoryManager } from '../memory';
 import { parseAction } from './parser';
@@ -114,7 +114,7 @@ async function llmChatWithRetry(
   llm: LLMProvider,
   request: { messages: Message[]; tools: ToolDefinition[]; maxTokens?: number; temperature?: number },
   maxRetries: number = 3
-): Promise<{ content: string | null; toolCalls: any[]; finishReason: string }> {
+): Promise<ChatResponse> {
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
