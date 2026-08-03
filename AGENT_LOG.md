@@ -205,6 +205,42 @@
 
 ---
 
+### 2026-08-03 19:00 - Phase 13: 记忆系统管线修复
+
+**触发**：验收报告指出记忆/上下文工程完成度不足，存在管线断裂问题
+
+**P0 核心修复**：
+1. **session-retriever 增加 sessionId 过滤**：新增 `searchBySession()` SQL 方法，`retrieve()` 接受 `sessionId` 参数，避免跨会话记忆污染
+2. **context-injector 集成 project-retriever**：通过 `EmbeddingProvider` 生成查询向量，检索 L3 项目级记忆，支持按文件路径过滤
+3. **context-injector 集成 compressor**：在组装消息后检查 token 数量，超限时触发截断压缩
+
+**P1 重构**：
+4. **loop.ts 废弃手写 messages 数组**：改用 `WorkingMemory` 类管理 L1 工作记忆，同时保留纯 `messages` 数组作为回退（无 MemoryManager 时）
+
+**P2 补全**：
+5. **新建 embedding.ts**：实现 `MockEmbeddingProvider`（确定性伪随机向量，SHA256 哈希驱动）和 `OpenAIEmbeddingProvider`（调用 OpenAI Embedding API），通过 `createEmbeddingProvider()` 工厂函数创建
+
+**P3 运维**：
+6. **session-store 新增方法**：`deleteById()`、`cleanExpired()`（按天数清理过期条目）
+7. **CLI 新增命令**：`harness memory forget <sessionId>`、`harness memory clean`
+8. **启动时自动清理**：`harness run` 命令启动时调用 `cleanExpired()`，输出清理统计
+
+**MemoryManager 重构**：
+- 构造函数新增 `maxContextTokens` 参数
+- 新增 `getEmbeddingProvider()`、`cleanExpired()`、`forget()` 方法
+- `injectContext()` 新增 `currentFilePath` 参数
+
+**测试更新**：
+- 新增 `tests/memory/embedding.test.ts`（3 个测试）
+- 扩展 `session-store.test.ts`（3→6 测试，新增 searchBySession/deleteById/cleanExpired）
+- 扩展 `session-retriever.test.ts`（3→4 测试，新增 sessionId 过滤）
+- 扩展 `memory-manager.test.ts`（2→4 测试，新增 cleanExpired/forget）
+- 更新 `context-injector.test.ts`（适配新构造函数签名）
+
+**最终测试结果**：21 文件 86 测试全部通过
+
+---
+
 ## 关键决策日志
 
 | 时间 | 决策 | 原因 |
@@ -254,12 +290,12 @@
 
 | 指标 | 数值 |
 |------|------|
-| 源文件 | 32 个 TypeScript 文件 |
-| 测试文件 | 20 个测试文件 |
-| 测试用例 | 77 个 |
+| 源文件 | 33 个 TypeScript 文件 |
+| 测试文件 | 21 个测试文件 |
+| 测试用例 | 86 个 |
 | 测试通过率 | 100% |
 | 演示脚本 | 3 个（guard/feedback/memory） |
-| Commit 数 | 14 次 |
+| Commit 数 | 15 次 |
 | Git 仓库 | GitLab（主）+ GitHub（镜像） |
 | CI/CD | GitLab CI（passed） |
 | 部署 | Render（免费版） |

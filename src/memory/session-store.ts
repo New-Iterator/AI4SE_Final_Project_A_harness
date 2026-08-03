@@ -36,12 +36,29 @@ export class SessionStore {
     return stmt.all(`%${keyword}%`, limit) as SessionMemoryEntry[];
   }
 
+  searchBySession(keyword: string, sessionId: string, limit: number = 5): SessionMemoryEntry[] {
+    const stmt = this.db.prepare(
+      'SELECT * FROM session_memory WHERE keywords LIKE ? AND sessionId = ? ORDER BY timestamp DESC LIMIT ?'
+    );
+    return stmt.all(`%${keyword}%`, sessionId, limit) as SessionMemoryEntry[];
+  }
+
   getBySession(sessionId: string): SessionMemoryEntry[] {
     return this.db.prepare('SELECT * FROM session_memory WHERE sessionId = ? ORDER BY timestamp DESC').all(sessionId) as SessionMemoryEntry[];
   }
 
   deleteSession(sessionId: string): void {
     this.db.prepare('DELETE FROM session_memory WHERE sessionId = ?').run(sessionId);
+  }
+
+  deleteById(id: number): void {
+    this.db.prepare('DELETE FROM session_memory WHERE id = ?').run(id);
+  }
+
+  cleanExpired(expireDays: number): number {
+    const cutoff = Date.now() - expireDays * 24 * 60 * 60 * 1000;
+    const result = this.db.prepare('DELETE FROM session_memory WHERE timestamp < ?').run(cutoff);
+    return result.changes;
   }
 
   close(): void {

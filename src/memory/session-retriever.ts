@@ -10,12 +10,14 @@ export class SessionRetriever {
     this.store = store;
   }
 
-  async retrieve(query: string, topK: number = 5): Promise<SessionMemoryEntry[]> {
+  async retrieve(query: string, topK: number = 5, sessionId?: string): Promise<SessionMemoryEntry[]> {
     const keywords = extractKeywords(query);
     const allResults: SessionMemoryEntry[] = [];
 
     for (const keyword of keywords) {
-      const results = this.store.search(keyword, topK * 2);
+      const results = sessionId
+        ? this.store.searchBySession(keyword, sessionId, topK * 2)
+        : this.store.search(keyword, topK * 2);
       for (const r of results) {
         if (!allResults.find(e => e.id === r.id)) {
           allResults.push(r);

@@ -46,7 +46,12 @@ program
       workingMemoryRounds: config.memory.workingMemoryRounds,
       sessionMemoryExpireDays: config.memory.sessionMemoryExpireDays,
       retrievalTopK: config.memory.retrievalTopK,
-    });
+    }, config.loop.maxContextTokens);
+
+    const cleaned = memory.cleanExpired();
+    if (cleaned > 0) {
+      console.log(chalk.gray(`[Harness] 已清理 ${cleaned} 条过期记忆`));
+    }
 
     const startTime = Date.now();
     const result = await runLoop(task, config, llm, registry, memory);
@@ -118,6 +123,44 @@ program
   .action(async (options: { port: string }) => {
     const { startWebServer } = await import('./web/server');
     startWebServer(parseInt(options.port, 10), credManager);
+  });
+
+const memoryCmd = program
+  .command('memory')
+  .description('记忆管理');
+
+memoryCmd
+  .command('forget <sessionId>')
+  .description('删除指定会话的全部记忆')
+  .action(async (sessionId: string) => {
+    const config = loadConfig();
+    const mm = new MemoryManager({
+      sessionDbPath: config.memory.sessionDbPath,
+      projectDbPath: config.memory.projectDbPath,
+      workingMemoryRounds: config.memory.workingMemoryRounds,
+      sessionMemoryExpireDays: config.memory.sessionMemoryExpireDays,
+      retrievalTopK: config.memory.retrievalTopK,
+    }, config.loop.maxContextTokens);
+    mm.forget(sessionId);
+    console.log(chalk.green(`[Harness] 会话 ${sessionId} 的记忆已删除`));
+    mm.close();
+  });
+
+memoryCmd
+  .command('clean')
+  .description('清理过期记忆')
+  .action(async () => {
+    const config = loadConfig();
+    const mm = new MemoryManager({
+      sessionDbPath: config.memory.sessionDbPath,
+      projectDbPath: config.memory.projectDbPath,
+      workingMemoryRounds: config.memory.workingMemoryRounds,
+      sessionMemoryExpireDays: config.memory.sessionMemoryExpireDays,
+      retrievalTopK: config.memory.retrievalTopK,
+    }, config.loop.maxContextTokens);
+    const cleaned = mm.cleanExpired();
+    console.log(chalk.green(`[Harness] 已清理 ${cleaned} 条过期记忆`));
+    mm.close();
   });
 
 program.parse();

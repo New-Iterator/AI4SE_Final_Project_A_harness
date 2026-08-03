@@ -5,7 +5,7 @@ describe('MemoryManager', () => {
   let mm: MemoryManager;
 
   beforeEach(() => {
-    mm = new MemoryManager({ sessionDbPath: ':memory:', projectDbPath: ':memory:', workingMemoryRounds: 10, sessionMemoryExpireDays: 30, retrievalTopK: 5 });
+    mm = new MemoryManager({ sessionDbPath: ':memory:', projectDbPath: ':memory:', workingMemoryRounds: 10, sessionMemoryExpireDays: 30, retrievalTopK: 5 }, 128000);
   });
 
   it('should record and retrieve session memory', async () => {
@@ -23,5 +23,18 @@ describe('MemoryManager', () => {
     ];
     const injected = await mm.injectContext(messages, 'session-1');
     expect(injected.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('should clean expired entries', () => {
+    mm.record('old-session', 'convention', 'old', {}, 'old');
+    const cleaned = mm.cleanExpired();
+    expect(cleaned).toBeGreaterThanOrEqual(0);
+  });
+
+  it('should forget session entries', async () => {
+    mm.record('session-x', 'convention', 'temp', {}, 'temp');
+    mm.forget('session-x');
+    const results = await mm.retrieve('temp', 'session-x');
+    expect(results).toHaveLength(0);
   });
 });

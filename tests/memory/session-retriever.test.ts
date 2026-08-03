@@ -33,4 +33,12 @@ describe('SessionRetriever', () => {
     expect(results).toHaveLength(1);
     expect(results[0].content).toBe('Good');
   });
+
+  it('should filter by sessionId', async () => {
+    store.insert({ sessionId: 's1', type: 'convention', content: 'S1 entry', metadata: '{}', keywords: 'shared', timestamp: 1000, confidence: 1.0 });
+    store.insert({ sessionId: 's2', type: 'convention', content: 'S2 entry', metadata: '{}', keywords: 'shared', timestamp: 2000, confidence: 1.0 });
+    const results = await retriever.retrieve('shared', 5, 's1');
+    expect(results).toHaveLength(1);
+    expect(results[0].content).toBe('S1 entry');
+  });
 });

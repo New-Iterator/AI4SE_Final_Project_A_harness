@@ -18,6 +18,19 @@ export async function runLoop(
   memory?: MemoryManager
 ): Promise<LoopResult> {
   const sessionId = randomUUID();
+  const wm = memory?.getWorkingMemory();
+
+  if (wm) {
+    wm.clear();
+    wm.add({
+      role: 'system',
+      content: `你是一个编码智能体。你可以读写文件、执行 shell 命令和运行测试。
+工作区: ${config.tools.workspaceRoot}
+当测试通过时停止。当测试失败时，修复代码并重新运行测试。`,
+    });
+    wm.add({ role: 'user', content: task });
+  }
+
   let messages: Message[] = [
     {
       role: 'system',
@@ -30,10 +43,11 @@ export async function runLoop(
 
   const tools: ToolDefinition[] = registry.getDefinitions();
   let consecutiveFailures = 0;
+  let currentFilePath: string | undefined;
 
   for (let i = 0; i < config.loop.maxIterations; i++) {
     if (memory) {
-      messages = await memory.injectContext(messages, sessionId);
+      messages = await memory.injectContext(messages, sessionId, currentFilePath);
     }
 
     const response = await llmChatWithRetry(llm, { messages, tools, maxTokens: config.llm.maxTokens, temperature: config.llm.temperature });
@@ -69,6 +83,10 @@ export async function runLoop(
         if (memory) memory.record(sessionId, 'guard_block', `审批被拒: ${guardResult.reason}`, {}, 'guard,denied');
         continue;
       }
+    }
+
+    if (action.tool === 'read_file' || action.tool === 'write_file') {
+      currentFilePath = action.args?.path || action.args?.filePath || currentFilePath;
     }
 
     const tc = response.toolCalls[0];
