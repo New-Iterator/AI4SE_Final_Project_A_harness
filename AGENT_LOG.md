@@ -356,3 +356,29 @@
 **最终状态**：21 文件 94 测试全部通过，TypeScript 编译零错误，GitLab CI passed。
 
 **遗留已知限制**：HITLHandler 可注入接口（§3.4）、compressor summarize 模式（§3.7.2）、feedback-demo 完整 mock LLM 循环（§11）、凭据 Key 零化/日志脱敏（§3.10）因架构复杂度在循环中跳过。
+
+---
+
+### 2026-08-03 22:30 - Phase 16: README 对齐 + 真实 LLM 测试适配
+
+**触发**：用户要求核对 README 与实际项目状态，并进行真实 LLM 调用测试。
+
+**README 对齐（7 项修正）**：
+- 新增 `src/web/` 目录、展开 `tests/` 和 `demos/` 子目录结构
+- 新增 `harness memory forget/clean` 命令文档
+- 安装命令改为 `npm install -g .` / `npm link`（包未发布）
+- 配置示例补全 `llm.temperature`、`loop.maxContextTokens`、`memory` 全部字段
+- 新增全局配置路径 `~/.harnessrc.json` 说明
+- 列出 `demos/` 三个脚本文件名
+
+**真实 LLM 测试适配（4 项修复）**：
+- MemoryManager 构造函数自动创建 `.harness` 数据库目录（`mkdirSync`）
+- 系统提示词增加平台检测（Windows/Linux），动态注入对应命令列表
+- shell 工具描述增加跨平台命令说明
+- 主循环增加 `[LLM] 轮次 N: tool_name` 日志输出
+
+**CI 完善**：
+- GitHub Actions：`docker-build` job 改为每次 push 构建，tag 时推送 GHCR
+- GitLab CI：新增 `docker-build` stage
+
+**最终状态**：21 文件 94 测试全部通过，GitLab CI + GitHub Actions 均 passed，Docker 镜像每次 push 自动构建验证。

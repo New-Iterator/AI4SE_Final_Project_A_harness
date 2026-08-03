@@ -3,13 +3,13 @@
 ============================================================
  项目:     coding-agent-harness
  分支:     main
- 提交:     c0f93f1 (R6: GitHub Actions CI, dotenv, Session, L3)
- 时间:     2026-08-03 21:16 CST
+ 提交:     4e42051 (CI: GitHub Actions + GitLab CI Docker build)
+ 时间:     2026-08-03 22:30 CST
  状态:     PASS
 ============================================================
  Job:      unit-test
  Stage:    test
- Image:    node:20 (Windows Node.js v24.18.1)
+ Image:    node:20
 ============================================================
 
 $ npm ci
