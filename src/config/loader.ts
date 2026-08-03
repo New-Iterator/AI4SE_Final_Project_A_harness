@@ -1,7 +1,10 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
+import { config as dotenvConfig } from 'dotenv';
 import { Config, DEFAULT_CONFIG } from './types';
+
+dotenvConfig();
 
 export function loadConfig(cwd?: string): Config {
   const workDir = cwd || process.cwd();

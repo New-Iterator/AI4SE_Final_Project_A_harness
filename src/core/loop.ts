@@ -1,4 +1,4 @@
-import type { LoopResult, Message } from '../types';
+import type { LoopResult, Message, Session } from '../types';
 import type { Config } from '../config/types';
 import type { LLMProvider, ToolDefinition, ChatResponse } from './llm/types';
 import type { ToolRegistry } from '../tools/registry';
@@ -22,6 +22,7 @@ export async function runLoop(
   }
 
   const sessionId = randomUUID();
+  const session: Session = { id: sessionId, task, status: 'running', iterations: 0, startedAt: Date.now() };
   if (memory) {
     memory.record(sessionId, 'task', task, {}, 'task,start');
   }
@@ -66,6 +67,8 @@ export async function runLoop(
   for (let i = 0; i < config.loop.maxIterations; i++) {
     if (cancelled) {
       process.removeListener('SIGINT', sigintHandler);
+      session.status = 'cancelled';
+      session.endedAt = Date.now();
       return { success: false, reason: 'cancelled', iterations: i };
     }
 
@@ -117,6 +120,8 @@ export async function runLoop(
       const approved = await requestApproval(action, guardResult);
       if (cancelled) {
         process.removeListener('SIGINT', sigintHandler);
+        session.status = 'cancelled';
+        session.endedAt = Date.now();
         return { success: false, reason: 'cancelled', iterations: i + 1 };
       }
       if (approved === false) {
@@ -161,6 +166,8 @@ export async function runLoop(
         memory.record(sessionId, 'decision', `会话结束: 测试通过 (${i + 1}轮)`, { iterations: i + 1 }, 'session,end');
       }
       process.removeListener('SIGINT', sigintHandler);
+      session.status = 'success';
+      session.endedAt = Date.now();
       return { success: true, reason: feedback.summary, iterations: i + 1 };
     }
 
@@ -174,6 +181,8 @@ export async function runLoop(
         if (memory) {
           memory.record(sessionId, 'decision', `会话结束: 连续失败 (${i + 1}轮)`, { iterations: i + 1 }, 'session,end');
         }
+        session.status = 'failed';
+        session.endedAt = Date.now();
         return { success: false, reason: `连续测试失败 ${consecutiveFailures} 次，提前停机`, iterations: i + 1 };
       }
       const fbMsg = `测试失败: ${feedback.summary}\n${feedback.failures?.map(f => `- ${f.testName}: ${f.error}`).join('\n') || ''}\n请修复代码并重试。`;
@@ -187,6 +196,8 @@ export async function runLoop(
   if (memory) {
     memory.record(sessionId, 'decision', `会话结束: 达到最大迭代次数 (${config.loop.maxIterations}次)`, { iterations: config.loop.maxIterations }, 'session,end');
   }
+  session.status = 'timeout';
+  session.endedAt = Date.now();
   return { success: false, reason: '达到最大迭代次数', iterations: config.loop.maxIterations };
 }
 

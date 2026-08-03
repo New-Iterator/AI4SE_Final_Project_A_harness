@@ -301,12 +301,7 @@ function renderConfig(config) {
   ].map(([l, v]) => '<div class="stat-row"><span class="stat-label">'+l+'</span><span class="stat-value">'+v+'</span></div>').join('');
 }
 function renderMemory(data) {
-  if (!data.entries || data.entries.length === 0) {
-    document.getElementById('memory-content').innerHTML = '<p style="color:#8b949e;font-size:13px">暂无记忆条目</p>';
-    return;
-  }
-  const rows = data.entries.map(e => '<tr><td>'+e.type+'</td><td>'+e.content+'</td><td>'+e.keywords+'</td><td>'+new Date(e.timestamp).toLocaleString()+'</td><td>'+(e.confidence*100).toFixed(0)+'%</td><td style="font-size:11px;color:#8b949e">'+e.sessionId+'</td></tr>').join('');
-  document.getElementById('memory-content').innerHTML = '<table><thead><tr><th>类型</th><th>内容</th><th>关键词</th><th>时间</th><th>置信度</th><th>SessionId</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  document.getElementById('memory-content').innerHTML = '<p style="color:#8b949e;font-size:13px;margin-bottom:8px">L2 会话记忆: '+(data.count||0)+' 条 | L3 项目记忆: '+(data.l3Count||0)+' 条</p>' + (data.entries && data.entries.length > 0 ? '<table><thead><tr><th>类型</th><th>内容</th><th>关键词</th><th>时间</th><th>置信度</th><th>SessionId</th></tr></thead><tbody>'+data.entries.map(e => '<tr><td>'+e.type+'</td><td>'+e.content+'</td><td>'+e.keywords+'</td><td>'+new Date(e.timestamp).toLocaleString()+'</td><td>'+(e.confidence*100).toFixed(0)+'%</td><td style="font-size:11px;color:#8b949e">'+e.sessionId+'</td></tr>').join('')+'</tbody></table>' : '<p style="color:#8b949e;font-size:13px">暂无记忆条目</p>');
 }
 loadAll();
 </script>
