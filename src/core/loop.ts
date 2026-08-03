@@ -17,8 +17,22 @@ export async function runLoop(
   registry: ToolRegistry,
   memory?: MemoryManager
 ): Promise<LoopResult> {
+  if (!task || task.trim().length === 0) {
+    return { success: false, reason: '空任务输入', iterations: 0 };
+  }
+
   const sessionId = randomUUID();
   const wm = memory?.getWorkingMemory();
+  const blacklist = new Map<string, number>();
+
+  let cancelled = false;
+  const sigintHandler = () => {
+    cancelled = true;
+    if (memory) {
+      memory.record(sessionId, 'decision', '用户中断 (Ctrl+C)', {}, 'interrupt,cancelled');
+    }
+  };
+  process.on('SIGINT', sigintHandler);
 
   if (wm) {
     wm.clear();
@@ -46,6 +60,11 @@ export async function runLoop(
   let currentFilePath: string | undefined;
 
   for (let i = 0; i < config.loop.maxIterations; i++) {
+    if (cancelled) {
+      process.removeListener('SIGINT', sigintHandler);
+      return { success: false, reason: 'cancelled', iterations: i };
+    }
+
     if (memory) {
       messages = await memory.injectContext(messages, sessionId, currentFilePath);
     }
@@ -58,6 +77,7 @@ export async function runLoop(
       if (memory) {
         memory.record(sessionId, 'decision', `任务完成: ${action.reason || 'Task completed'}`, {}, 'task,complete');
       }
+      process.removeListener('SIGINT', sigintHandler);
       return { success: true, reason: action.reason || '任务完成', iterations: i + 1 };
     }
 
@@ -65,6 +85,14 @@ export async function runLoop(
       messages.push({ role: 'assistant', content: null });
       messages.push({ role: 'tool', content: `错误: ${action.reason || '无效动作'}`, toolCallId: 'error' });
       if (memory) memory.record(sessionId, 'error', `无效动作: ${action.reason}`, {}, 'invalid,error');
+      continue;
+    }
+
+    const blacklistKey = makeBlacklistKey(action);
+    if (blacklistKey && blacklist.has(blacklistKey)) {
+      messages.push({ role: 'assistant', content: null });
+      messages.push({ role: 'tool', content: `BLOCKED: 此动作已被黑名单拦截，请选择其他方式`, toolCallId: 'blacklist' });
+      if (memory) memory.record(sessionId, 'guard_block', `黑名单拦截: ${blacklistKey}`, {}, 'blacklist,block');
       continue;
     }
 
@@ -80,7 +108,12 @@ export async function runLoop(
       if (!approved) {
         messages.push({ role: 'assistant', content: null });
         messages.push({ role: 'tool', content: `需要审批: ${guardResult.reason}。用户已拒绝。`, toolCallId: 'guard' });
-        if (memory) memory.record(sessionId, 'guard_block', `审批被拒: ${guardResult.reason}`, {}, 'guard,denied');
+        if (memory) memory.record(sessionId, 'hitl_denied', `审批被拒: ${guardResult.reason}`, {}, 'guard,denied');
+        const key = makeBlacklistKey(action);
+        if (key) {
+          const count = (blacklist.get(key) || 0) + 1;
+          blacklist.set(key, count);
+        }
         continue;
       }
     }
@@ -108,6 +141,7 @@ export async function runLoop(
       if (memory) {
         memory.record(sessionId, 'test_result', `测试通过: ${feedback.summary}`, {}, 'test,pass');
       }
+      process.removeListener('SIGINT', sigintHandler);
       return { success: true, reason: feedback.summary, iterations: i + 1 };
     }
 
@@ -117,6 +151,7 @@ export async function runLoop(
         memory.record(sessionId, 'test_result', `测试失败: ${feedback.summary}`, {}, 'test,fail');
       }
       if (consecutiveFailures >= config.loop.maxConsecutiveFailures) {
+        process.removeListener('SIGINT', sigintHandler);
         return { success: false, reason: `连续失败 ${config.loop.maxConsecutiveFailures} 次，已停止`, iterations: i + 1 };
       }
       const fbMsg = `测试失败: ${feedback.summary}\n${feedback.failures?.map(f => `- ${f.testName}: ${f.error}`).join('\n') || ''}\n请修复代码并重试。`;
@@ -126,6 +161,7 @@ export async function runLoop(
     }
   }
 
+  process.removeListener('SIGINT', sigintHandler);
   return { success: false, reason: '达到最大迭代次数', iterations: config.loop.maxIterations };
 }
 
@@ -170,4 +206,15 @@ async function requestApproval(action: any, guardResult: { reason?: string }): P
       resolve(answer.trim().toLowerCase() === 'y');
     });
   });
+}
+
+function makeBlacklistKey(action: any): string | null {
+  if (action.tool === 'shell') {
+    return `shell:${action.args?.command || ''}`;
+  }
+  if (action.tool === 'write_file' || action.tool === 'read_file') {
+    return `${action.tool}:${action.args?.filePath || ''}`;
+  }
+  const argsStr = action.args ? JSON.stringify(action.args) : '';
+  return argsStr ? `${action.tool}:${argsStr}` : null;
 }

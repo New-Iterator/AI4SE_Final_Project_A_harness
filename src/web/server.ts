@@ -1,24 +1,54 @@
 import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { readFileSync } from 'fs';
-import { join } from 'path';
+import { join, parse } from 'path';
 import { loadConfig } from '../config/loader';
 import { MemoryManager } from '../memory';
 import { CredentialManager } from '../credentials/manager';
 import chalk from 'chalk';
 
+function parseQuery(url: string): Record<string, string> {
+  const idx = url.indexOf('?');
+  if (idx === -1) return {};
+  const qs = url.slice(idx + 1);
+  const params: Record<string, string> = {};
+  for (const pair of qs.split('&')) {
+    const [k, v] = pair.split('=');
+    if (k) params[decodeURIComponent(k)] = decodeURIComponent(v || '');
+  }
+  return params;
+}
+
+function getPath(url: string): string {
+  const idx = url.indexOf('?');
+  return idx === -1 ? url : url.slice(0, idx);
+}
+
+function readBody(req: IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => resolve(body));
+    req.on('error', reject);
+  });
+}
+
 export function startWebServer(port: number, credManager: CredentialManager): void {
   const config = loadConfig();
 
   const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
+    const url = req.url || '/';
+    const path = getPath(url);
+    const query = parseQuery(url);
+
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
-    if (req.url === '/' || req.url === '/index.html') {
+    if (path === '/' || path === '/index.html') {
       const html = getDashboardHtml();
       res.end(html);
       return;
     }
 
-    if (req.url === '/api/status') {
+    if (path === '/api/status') {
       const credStatus = await credManager.status();
       const configSummary = {
         provider: config.llm.provider,
@@ -31,7 +61,7 @@ export function startWebServer(port: number, credManager: CredentialManager): vo
       return;
     }
 
-    if (req.url === '/api/memory') {
+    if (path === '/api/memory') {
       try {
         const memory = new MemoryManager({
           sessionDbPath: config.memory.sessionDbPath,
@@ -40,11 +70,13 @@ export function startWebServer(port: number, credManager: CredentialManager): vo
           sessionMemoryExpireDays: config.memory.sessionMemoryExpireDays,
           retrievalTopK: config.memory.retrievalTopK,
         });
-        const sessions = memory.getSessionStore().getBySession('') || [];
-        const allEntries = sessions.length > 0 ? sessions : [];
+        const sessionId = query.sessionId;
+        const entries = sessionId
+          ? memory.getSessionStore().getBySession(sessionId)
+          : memory.getSessionStore().getAll();
         memory.close();
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.end(JSON.stringify({ entries: allEntries, count: allEntries.length }));
+        res.end(JSON.stringify({ entries, count: entries.length }));
       } catch {
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.end(JSON.stringify({ entries: [], count: 0 }));
@@ -52,7 +84,36 @@ export function startWebServer(port: number, credManager: CredentialManager): vo
       return;
     }
 
-    if (req.url === '/api/config') {
+    if (path === '/api/memory/delete' && req.method === 'POST') {
+      try {
+        const body = await readBody(req);
+        const { sessionId } = JSON.parse(body);
+        if (!sessionId) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.end(JSON.stringify({ error: 'sessionId is required' }));
+          return;
+        }
+        const memory = new MemoryManager({
+          sessionDbPath: config.memory.sessionDbPath,
+          projectDbPath: config.memory.projectDbPath,
+          workingMemoryRounds: config.memory.workingMemoryRounds,
+          sessionMemoryExpireDays: config.memory.sessionMemoryExpireDays,
+          retrievalTopK: config.memory.retrievalTopK,
+        });
+        memory.forget(sessionId);
+        memory.close();
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify({ success: true, sessionId }));
+      } catch (err: any) {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify({ error: err.message }));
+      }
+      return;
+    }
+
+    if (path === '/api/config') {
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       res.end(JSON.stringify(config));
       return;
@@ -126,7 +187,11 @@ tr:hover { background: #1c2128; }
   </div>
   <div class="card full-width">
     <h2>记忆条目</h2>
-    <button class="btn refresh" onclick="loadMemory()">刷新</button>
+    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center">
+      <input id="session-filter" type="text" placeholder="按 sessionId 过滤..." style="background:#0d1117;color:#c9d1d9;border:1px solid #30363d;padding:6px 12px;border-radius:6px;font-size:13px;width:300px">
+      <button class="btn" onclick="loadMemory()">刷新</button>
+      <button class="btn danger" onclick="deleteMemory()" style="margin-left:auto">删除选中会话</button>
+    </div>
     <div id="memory-content">加载中...</div>
   </div>
 </div>
@@ -143,10 +208,31 @@ async function loadAll() {
 }
 async function loadMemory() {
   try {
-    const resp = await fetch('/api/memory');
+    const sessionId = document.getElementById('session-filter')?.value || '';
+    const url = sessionId ? '/api/memory?sessionId=' + encodeURIComponent(sessionId) : '/api/memory';
+    const resp = await fetch(url);
     const data = await resp.json();
     renderMemory(data);
   } catch(e) { document.getElementById('memory-content').innerHTML = '加载失败'; }
+}
+async function deleteMemory() {
+  const sessionId = document.getElementById('session-filter')?.value || '';
+  if (!sessionId) { alert('请先输入要删除的 sessionId'); return; }
+  if (!confirm('确定要删除会话 ' + sessionId + ' 的所有记忆?')) return;
+  try {
+    const resp = await fetch('/api/memory/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId }),
+    });
+    const data = await resp.json();
+    if (data.success) {
+      alert('已删除会话 ' + sessionId + ' 的记忆');
+      loadMemory();
+    } else {
+      alert('删除失败: ' + (data.error || '未知错误'));
+    }
+  } catch(e) { alert('删除失败'); }
 }
 function renderStatus(data) {
   document.getElementById('status-content').innerHTML = [
@@ -183,8 +269,8 @@ function renderMemory(data) {
     document.getElementById('memory-content').innerHTML = '<p style="color:#8b949e;font-size:13px">暂无记忆条目</p>';
     return;
   }
-  const rows = data.entries.map(e => '<tr><td>'+e.type+'</td><td>'+e.content+'</td><td>'+e.keywords+'</td><td>'+new Date(e.timestamp).toLocaleString()+'</td><td>'+(e.confidence*100).toFixed(0)+'%</td></tr>').join('');
-  document.getElementById('memory-content').innerHTML = '<table><thead><tr><th>类型</th><th>内容</th><th>关键词</th><th>时间</th><th>置信度</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  const rows = data.entries.map(e => '<tr><td>'+e.type+'</td><td>'+e.content+'</td><td>'+e.keywords+'</td><td>'+new Date(e.timestamp).toLocaleString()+'</td><td>'+(e.confidence*100).toFixed(0)+'%</td><td style="font-size:11px;color:#8b949e">'+e.sessionId+'</td></tr>').join('');
+  document.getElementById('memory-content').innerHTML = '<table><thead><tr><th>类型</th><th>内容</th><th>关键词</th><th>时间</th><th>置信度</th><th>SessionId</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 loadAll();
 </script>

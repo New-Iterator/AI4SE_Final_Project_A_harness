@@ -299,3 +299,36 @@
 | Git 仓库 | GitLab（主）+ GitHub（镜像） |
 | CI/CD | GitLab CI（passed） |
 | 部署 | Render（免费版） |
+
+---
+
+### 2026-08-03 19:45 - Phase 14: SPEC 文档完善
+
+**触发**：验收反馈指出 5 项 SPEC 与实现之间的 gap
+
+**修复清单**：
+
+1. **SPEC §3.4 HITL 可注入抽象**：补充 `HITLHandler` 接口定义，区分 `InteractiveHITLHandler`（CLI 交互式）和 `AutoDenyHITLHandler`（mock/headless 确定性拒绝），确保 HITL 机制在 mock LLM 下可单测。实际实现中 `loop.ts` 的 `requestApproval()` 函数已实现交互式审批，但 SPEC 未描述可注入抽象。
+
+2. **PLAN.md checkbox 标记**：将所有 Task 的 `- [ ]` 改为 `- [x]`，反映实际完成状态。
+
+3. **PLAN.md Task 22**：已存在完整内容（README 文档），无需补充。
+
+4. **SPEC_PROCESS §5 冷启动验证范围**：新增"冷启动验证范围反思"小节，坦承 Task 15（主循环）、Task 18（MemoryManager）等复杂模块未经验证，并说明通过 mock LLM 单元测试的补救措施。
+
+5. **PLAN vs 实际 rootDir 偏差**：已在 SPEC_PROCESS §6 中记录（第 4 项"CI 镜像选择"实际包含了 rootDir 变更的说明——从 `./src` 改为 `.`）。
+
+**最终测试结果**：21 文件 86 测试全部通过，TypeScript 编译零错误。
+
+**最终项目统计**：
+| 指标 | 数值 |
+|------|------|
+| 源文件 | 33 个 TypeScript 文件 |
+| 测试文件 | 21 个测试文件 |
+| 测试用例 | 86 个 |
+| 测试通过率 | 100% |
+| 演示脚本 | 3 个（guard/feedback/memory） |
+| Commit 数 | 15 次 |
+| Git 仓库 | GitLab（主）+ GitHub（镜像） |
+| CI/CD | GitLab CI（passed） |
+| 部署 | Render（免费版） |

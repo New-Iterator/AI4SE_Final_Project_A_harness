@@ -1,4 +1,4 @@
-# SPEC: Coding Agent Harness
+﻿# SPEC: Coding Agent Harness
 
 > 一个 TypeScript/Node.js 实现的 Coding Agent Harness，能读写代码、执行命令、运行测试，并根据测试结果自我修正。Agent = LLM + Harness，Harness 提供决策封装、工具分发、治理护栏、反馈闭环、记忆系统、声明式配置。
 
@@ -41,19 +41,21 @@ LLM 只能"决定下一步做什么"，但无法自主作用于外部世界。�
 **输入**：用户任务描述（string）、配置对象（Config）
 
 **行为**：
-1. 初始化对话消息列表（含 system prompt + 用户任务）
+1. 初始化对话消息列表（含 system prompt + 用户任务），初始化 `consecutiveFailures = 0`
 2. 循环（最多 `config.loop.maxIterations` 次）：
-   a. 调用 `contextAssembler.assemble()` 注入记忆 → 组装完整上下文
+   - 任何迭代中，用户按 Ctrl+C 触发 SIGINT 信号 → loop 捕获后记录当前状态到 L2 记忆 → 返回 `{ success: false, reason: 'cancelled' }`
+   a. 调用 `contextInjector.inject()` 注入记忆 → 组装完整上下文
    b. 调用 `llmProvider.chat()` → 获取 LLM 响应
    c. 调用 `parser.parse()` → 解析为 Action（tool_call / stop / invalid）
    d. 若 `stop`：返回成功结果
    e. 若 `invalid`：注入错误反馈，继续下一轮
+   e.5. 黑名单检查：若 action 在黑名单中 → 注入 block 反馈（`role: 'tool', content: 'BLOCKED: 此动作已被黑名单拦截，请选择其他方式'`），continue 下一轮
    f. 调用 `guard.check()` → 护栏检查
    g. 若被拦截：注入拦截反馈，继续下一轮
    h. 若需审批：调用 HITL 请求人工确认，不通过则继续
    i. 调用 `executor.execute()` → 执行动作
    j. 调用 `feedbackValidator.validate()` → 获取客观反馈
-   k. 将反馈注入消息列表
+   k. 将反馈注入消息列表；若 `feedback.verdict === 'fail'` → `consecutiveFailures++`；若 `consecutiveFailures >= config.loop.maxConsecutiveFailures`（默认 3）→ 返回 `{ success: false, reason: '连续测试失败（' + consecutiveFailures + '次），提前停机' }`；若 `feedback.verdict !== 'fail'` → 重置 `consecutiveFailures = 0`
    l. 若 `feedback.shouldStop`：返回结果
 3. 达到最大迭代次数：返回超时失败
 
@@ -77,9 +79,11 @@ LLM 只能"决定下一步做什么"，但无法自主作用于外部世界。�
 - OpenAI 兼容格式（DeepSeek、通义千问等）
 - Mock（用于测试）
 
+Mock 模式支持两种子模式：① 脚本模式（script）——接受 `{ inputContains: string, response: ChatResponse }[]` 预设脚本，按输入内容匹配返回；② 回放模式（replay）——接受 `ChatResponse[]` 预设序列，按顺序返回。两种模式均支持 `reset()` 重置索引。
+
 **边界条件**：未配置凭据时抛出明确错误；不支持的供应商报错
 
-**错误处理**：网络超时 30s；HTTP 4xx/5xx 重试 3 次，指数退避
+**错误处理**：网络超时 30s；指数退避参数：初始延迟 1s，最大延迟 8s，总超时 30s；仅在网络错误或 5xx 时重试，4xx 不重试。
 
 ### 3.3 动作解析器 (`src/core/parser.ts`)
 
@@ -93,10 +97,10 @@ LLM 只能"决定下一步做什么"，但无法自主作用于外部世界。�
 - 若 LLM 响应中无 `tool_calls` 字段，尝试从纯文本中提取结构化动作：
   1. 匹配 JSON 代码块（` ```json ... ``` `）→ 尝试解析为 `{ tool, args }` 格式
   2. 匹配关键字 `STOP` 或 `DONE`（不区分大小写）→ 识别为 `stop` 动作
-  3. 匹配模式 `tool_name(args)`（如 `write_file("path", "content")`）→ 尝试提取工具名和参数
+  3. 使用正则 `` `/^(\w+)\(([\s\S]*)\)$/` `` 尝试匹配，括号内内容尝试 `JSON.parse`，失败则作为纯文本参数。此解析为 best-effort 兜底，生产环境应依赖标准 `tool_calls` 格式。
 - 以上均失败 → `type: 'invalid'`，原文本作为 `reason` 字段返回
 
-**边界条件**：空响应 → invalid；JSON 解析失败 → invalid；匹配到多个工具调用 → 仅取第一个
+**边界条件**：空响应 → invalid；JSON 解析失败 → invalid；匹配到多个工具调用 → 仅取第一个，丢弃的其余工具调用以 warning 消息注入消息列表（`role: 'tool'`），告知 LLM '仅执行了第一个工具调用，其余已忽略，请逐一调用工具'
 
 ### 3.4 护栏系统 (`src/core/guard.ts`)
 
@@ -140,13 +144,41 @@ LLM 只能"决定下一步做什么"，但无法自主作用于外部世界。�
 
 **边界条件**：
 - 用户在 WAITING 状态下按 Ctrl+C → 终止整个 loop，返回 cancelled 结果
-- 连续 3 次被拒绝的同类动作 → 自动加入黑名单，本轮不再触发 HITL（直接 block）
+- 连续 3 次被拒绝的同类动作 → 自动加入黑名单，本轮不再触发 HITL（直接 block）。黑名单存储在 loop 内存中（`Map<string, number>` 结构，key 为同类动作标识，value 为被拒绝次数），loop 结束时清空。黑名单检查位于 `loop.ts` 中，在调用 guard 之前先检查黑名单。
 - 非交互式环境（无 TTY）→ 自动拒绝，不等待用户输入
 
 **"同类动作"判定规则**：两条动作视为同类当且仅当满足以下条件之一：
 - 相同 `tool` 且相同 `command`（shell 工具）——精确字符串匹配
 - 相同 `tool` 且相同 `filePath`（read_file / write_file 工具）——精确字符串匹配
 - 相同 `tool` 且 `args` 的 JSON 序列化结果相同
+
+**HITLHandler 可注入抽象**：
+
+为满足 §A.4-C 的"移除真实 LLM 后仍能用单测验证"要求，HITL 审批逻辑通过可注入的 `HITLHandler` 接口实现，而非硬编码在 loop 中：
+
+```typescript
+interface HITLHandler {
+  requestApproval(action: Action, reason: string): Promise<boolean>;
+}
+```
+
+**两种内置实现**：
+
+| 实现 | 行为 | 适用场景 |
+|------|------|---------|
+| `InteractiveHITLHandler` | 在 CLI 中使用 readline 等待用户输入 `y`/`n`，60s 超时默认拒绝 | 真实运行时（有 TTY） |
+| `AutoDenyHITLHandler` | 始终返回 `false`（拒绝），不等待用户输入 | mock LLM 测试、CI 环境、无 TTY |
+
+**可测试性**：
+- 在 mock LLM 测试中注入 `AutoDenyHITLHandler`，断言：危险动作被拦截后在消息列表中注入 `APPROVAL REQUIRED` 消息，且动作不执行
+- 测试 `AutoDenyHITLHandler.requestApproval()` 本身：任何输入均返回 `false`，不依赖 I/O
+- 测试 `InteractiveHITLHandler` 的超时逻辑：注入 mock stdin，在 60s 内不输入 → 断言返回 `false`
+
+**HITL 与主循环的集成**（`loop.ts`）：
+1. Guard 返回 `requiresApproval=true` → 调用 `hitlHandler.requestApproval(action, reason)`
+2. 若返回 `true` → 继续执行动作
+3. 若返回 `false` → 注入拒绝反馈消息（`role: 'tool', content: 'APPROVAL REQUIRED: ... User denied.'`），继续下一轮，不执行动作
+4. 被拒绝的动作记录到 L2 记忆（`type: 'hitl_denied'`）
 
 ### 3.5 动作执行器 (`src/core/executor.ts`)
 
@@ -188,15 +220,15 @@ LLM 只能"决定下一步做什么"，但无法自主作用于外部世界。�
 #### 3.7.1 上下文组装器 (`src/memory/context-injector.ts`)
 
 **输入**：
-- `messages: Message[]` —— 当前会话消息列表（L1 工作记忆）
+- `messages: Message[]` —— 当前会话消息列表（L1 工作记忆，三层记忆模型详见 §6.4）
 - `sessionId: string` —— 当前会话 ID
 - `config: MemoryConfig` —— 记忆配置（检索条数上限、注入位置等）
 
-**行为**：
+**行为**（三层记忆模型详见 §6.4）：
 1. 从 L2（session-store）按关键词检索与当前任务相关的历史记忆条目
 2. 从 L3（project-store）按语义检索相关代码库知识
 3. 将检索结果格式化为结构化 context message（role: `'system'` 或 `'user'`）
-4. 将 context message 注入消息列表——注入位置：system prompt 之后、最新用户消息之前
+4. 将 context message 注入消息列表——注入位置：在消息列表中从后往前找到的第一条 `role='user'` 的消息，在此消息之前插入记忆消息
 5. 估算注入后的总 token 数；若超过 `config.loop.maxContextTokens`，触发 `compressor` 压缩旧消息
 6. 返回重组后的消息列表
 
@@ -256,12 +288,15 @@ LLM 只能"决定下一步做什么"，但无法自主作用于外部世界。�
    - **凭据管理**：显示各供应商 API Key 的配置状态（已配置/未配置），不暴露明文
    - **记忆管理**：列出当前会话记忆条目（L2），支持按 sessionId 查看和删除；显示项目记忆条目数（L3）
    - **配置查看**：展示当前 `.harnessrc.json` 的完整配置内容
-3. `/api/status` 端点：返回 JSON 格式的系统状态数据
-4. `/api/credentials` 端点：返回凭据配置状态
-5. `/api/memory` 端点：返回记忆条目列表，支持 `?sessionId=` 查询参数过滤
-6. `/api/memory/delete` 端点（POST）：删除指定 sessionId 的记忆条目
+3. `/api/status` 端点（GET）：返回 JSON 格式的系统状态数据
+4. `/api/credentials` 端点（GET）：返回凭据配置状态，不暴露明文
+5. `/api/config` 端点（GET）：返回完整配置 JSON
+6. `/api/memory` 端点（GET）：返回记忆条目列表，支持 `?sessionId=` 查询参数过滤
+7. `/api/memory/delete` 端点（POST）：删除指定 sessionId 的记忆条目
 
 **输出**：HTML 页面（`text/html; charset=utf-8`）或 JSON 响应（API 端点）
+
+**安全说明**：Web 面板默认运行在 localhost，信任本地边界，无内置认证；生产环境建议配合反向代理添加认证。
 
 **边界条件**：
 - 端口被占用 → 启动失败，输出错误信息并退出
@@ -289,6 +324,7 @@ LLM 只能"决定下一步做什么"，但无法自主作用于外部世界。�
 - `llm.model`（模型名）
 - `llm.maxTokens`（默认 4096）
 - `loop.maxIterations`（默认 50）
+- `loop.maxConsecutiveFailures`（默认 3，连续测试失败多少次后强制停机，防止无限修正循环）
 - `loop.maxContextTokens`（默认 128000）
 - `tools.workspaceRoot`（默认当前目录）
 - `tools.allowedCommands`（白名单，如空则全部允许）
@@ -623,6 +659,8 @@ interface TestFailure {
 ### Web 管理面板
 
 项目包含一个基于 Node.js HTTP 的 Web 管理面板（`harness web` 命令），用于查看系统状态、凭据配置、记忆条目和运行参数。这满足了通用要求中对 WebUI 接口的要求，同时保持了 CLI 作为主要交互方式的设计定位。
+
+Web 面板使用纯 HTML/CSS/JS 实现，不使用 Open Design 的原因：面板仅用于系统状态展示和基础管理，无复杂 UI 交互，纯 HTML 模板已满足需求。
 
 ---
 

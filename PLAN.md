@@ -1,6 +1,6 @@
 # Coding Agent Harness Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Build a TypeScript/Node.js Coding Agent Harness with event-driven pipeline architecture, mock-LLM-testable mechanisms, and a deep focus on memory/context engineering.
 
@@ -64,13 +64,13 @@ Task 1 (scaffolding)
 **Interfaces:**
 - Produces: `package.json` with all dependencies declared, `tsconfig.json` with strict mode, `vitest.config.ts` ready for testing
 
-- [ ] **Step 1: Initialize git repo**
+- [x] **Step 1: Initialize git repo**
 
 ```bash
 git init
 ```
 
-- [ ] **Step 2: Create package.json**
+- [x] **Step 2: Create package.json**
 
 ```json
 {
@@ -103,7 +103,7 @@ git init
 }
 ```
 
-- [ ] **Step 3: Create tsconfig.json**
+- [x] **Step 3: Create tsconfig.json**
 
 ```json
 {
@@ -126,7 +126,7 @@ git init
 }
 ```
 
-- [ ] **Step 4: Create vitest.config.ts**
+- [x] **Step 4: Create vitest.config.ts**
 
 ```typescript
 import { defineConfig } from 'vitest/config';
@@ -140,7 +140,7 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 5: Create .gitignore**
+- [x] **Step 5: Create .gitignore**
 
 ```
 node_modules/
@@ -151,34 +151,34 @@ dist/
 *.db-journal
 ```
 
-- [ ] **Step 6: Create placeholder src/index.ts**
+- [x] **Step 6: Create placeholder src/index.ts**
 
 ```typescript
 #!/usr/bin/env node
 console.log('Coding Agent Harness');
 ```
 
-- [ ] **Step 7: Install dependencies and verify**
+- [x] **Step 7: Install dependencies and verify**
 
 ```bash
 npm install
 ```
 
-- [ ] **Step 8: Run build to verify**
+- [x] **Step 8: Run build to verify**
 
 ```bash
 npm run build
 ```
 Expected: compiles without errors, `dist/index.js` created.
 
-- [ ] **Step 9: Run tests to verify vitest works**
+- [x] **Step 9: Run tests to verify vitest works**
 
 ```bash
 npm test
 ```
 Expected: "No test files found" or passes.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add .
@@ -196,7 +196,7 @@ git commit -m "chore: scaffold project with TypeScript, Vitest, dependencies"
 **Interfaces:**
 - Produces: `Action`, `ToolResult`, `Message`, `ToolCall`, `LoopResult` types; `Config` interface; `loadConfig(cwd?: string): Config` function
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `tests/config/loader.test.ts`:
 
@@ -239,14 +239,14 @@ describe('loadConfig', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/config/loader.test.ts
 ```
 Expected: FAIL -- module not found.
 
-- [ ] **Step 3: Create src/types.ts**
+- [x] **Step 3: Create src/types.ts**
 
 ```typescript
 export interface Action {
@@ -285,7 +285,7 @@ export interface LoopResult {
 }
 ```
 
-- [ ] **Step 4: Create src/config/types.ts**
+- [x] **Step 4: Create src/config/types.ts**
 
 ```typescript
 export interface Config {
@@ -331,7 +331,7 @@ export const DEFAULT_CONFIG: Config = {
 };
 ```
 
-- [ ] **Step 5: Create src/config/loader.ts**
+- [x] **Step 5: Create src/config/loader.ts**
 
 ```typescript
 import { readFileSync, existsSync } from 'fs';
@@ -372,14 +372,14 @@ function deepMerge(target: Record<string, unknown>, source: Record<string, unkno
 }
 ```
 
-- [ ] **Step 6: Run tests to verify pass**
+- [x] **Step 6: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/config/loader.test.ts
 ```
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/types.ts src/config/types.ts src/config/loader.ts tests/config/loader.test.ts
@@ -396,7 +396,7 @@ git commit -m "feat: add shared types and config loader with defaults"
 **Interfaces:**
 - Produces: `LLMProvider`, `ChatRequest`, `ChatResponse`, `ToolDefinition` interfaces
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `tests/core/llm/types.test.ts`:
 
@@ -411,14 +411,14 @@ describe('LLM types', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/core/llm/types.test.ts
 ```
 Expected: FAIL -- module not found.
 
-- [ ] **Step 3: Create src/core/llm/types.ts**
+- [x] **Step 3: Create src/core/llm/types.ts**
 
 ```typescript
 import type { Message, ToolCall } from '../../types';
@@ -447,14 +447,14 @@ export interface LLMProvider {
 }
 ```
 
-- [ ] **Step 4: Run test to verify pass**
+- [x] **Step 4: Run test to verify pass**
 
 ```bash
 npx vitest run tests/core/llm/types.test.ts
 ```
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/core/llm/types.ts tests/core/llm/types.test.ts
@@ -473,7 +473,7 @@ git commit -m "feat: add LLM abstraction types"
 - Consumes: `LLMProvider`, `ChatRequest`, `ChatResponse` from Task 3
 - Produces: `MockLLMProvider` class with script mode and replay mode
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `tests/core/llm/mock.test.ts`:
 
@@ -542,14 +542,14 @@ describe('MockLLMProvider', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/core/llm/mock.test.ts
 ```
 Expected: FAIL -- module not found.
 
-- [ ] **Step 3: Create src/core/llm/mock.ts**
+- [x] **Step 3: Create src/core/llm/mock.ts**
 
 ```typescript
 import type { LLMProvider, ChatRequest, ChatResponse } from './types';
@@ -587,14 +587,14 @@ export class MockLLMProvider implements LLMProvider {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify pass**
+- [x] **Step 4: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/core/llm/mock.test.ts
 ```
 Expected: 6 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/core/llm/mock.ts tests/core/llm/mock.test.ts
@@ -612,7 +612,7 @@ git commit -m "feat: add MockLLMProvider with script and replay modes"
 - Consumes: `LLMProvider`, `ChatRequest`, `ChatResponse` from Task 3
 - Produces: `OpenAIProvider`, `AnthropicProvider`, `OpenAICompatProvider` classes
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `tests/core/llm/adapters.test.ts`:
 
@@ -650,14 +650,14 @@ describe('LLM Adapters', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/core/llm/adapters.test.ts
 ```
 Expected: FAIL -- modules not found.
 
-- [ ] **Step 3: Create src/core/llm/openai.ts**
+- [x] **Step 3: Create src/core/llm/openai.ts**
 
 ```typescript
 import type { LLMProvider, ChatRequest, ChatResponse } from './types';
@@ -712,7 +712,7 @@ export class OpenAIProvider implements LLMProvider {
 }
 ```
 
-- [ ] **Step 4: Create src/core/llm/anthropic.ts**
+- [x] **Step 4: Create src/core/llm/anthropic.ts**
 
 ```typescript
 import type { LLMProvider, ChatRequest, ChatResponse } from './types';
@@ -764,7 +764,7 @@ export class AnthropicProvider implements LLMProvider {
 }
 ```
 
-- [ ] **Step 5: Create src/core/llm/openai-compat.ts**
+- [x] **Step 5: Create src/core/llm/openai-compat.ts**
 
 ```typescript
 import { OpenAIProvider } from './openai';
@@ -776,14 +776,14 @@ export class OpenAICompatProvider extends OpenAIProvider {
 }
 ```
 
-- [ ] **Step 6: Run tests to verify pass**
+- [x] **Step 6: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/core/llm/adapters.test.ts
 ```
 Expected: 6 tests PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/core/llm/openai.ts src/core/llm/anthropic.ts src/core/llm/openai-compat.ts tests/core/llm/adapters.test.ts
@@ -802,7 +802,7 @@ git commit -m "feat: add OpenAI, Anthropic, and OpenAI-compat LLM adapters"
 - Consumes: `LLMProvider` from Task 3; `MockLLMProvider` from Task 4; adapters from Task 5; `Config` from Task 2
 - Produces: `createLLMProvider(config: Config, apiKeys: Record<string, string>): LLMProvider`
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `tests/core/llm/factory.test.ts`:
 
@@ -857,14 +857,14 @@ describe('createLLMProvider', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/core/llm/factory.test.ts
 ```
 Expected: FAIL -- module not found.
 
-- [ ] **Step 3: Create src/core/llm/factory.ts**
+- [x] **Step 3: Create src/core/llm/factory.ts**
 
 ```typescript
 import type { LLMProvider } from './types';
@@ -902,14 +902,14 @@ export function createLLMProvider(config: Config, apiKeys: Record<string, string
 }
 ```
 
-- [ ] **Step 4: Run tests to verify pass**
+- [x] **Step 4: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/core/llm/factory.test.ts
 ```
 Expected: 6 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/core/llm/factory.ts tests/core/llm/factory.test.ts
@@ -927,7 +927,7 @@ git commit -m "feat: add LLM provider factory"
 - Consumes: `Action` from Task 2, `ChatResponse` from Task 3
 - Produces: `parseAction(response: ChatResponse): Action`
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `tests/core/parser.test.ts`:
 
@@ -988,14 +988,14 @@ describe('parseAction', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/core/parser.test.ts
 ```
 Expected: FAIL -- module not found.
 
-- [ ] **Step 3: Create src/core/parser.ts**
+- [x] **Step 3: Create src/core/parser.ts**
 
 ```typescript
 import type { Action } from '../types';
@@ -1020,14 +1020,14 @@ export function parseAction(response: ChatResponse): Action {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify pass**
+- [x] **Step 4: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/core/parser.test.ts
 ```
 Expected: 5 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/core/parser.ts tests/core/parser.test.ts
@@ -1046,7 +1046,7 @@ git commit -m "feat: add action parser for LLM responses"
 - Consumes: `Action` from Task 2
 - Produces: `GuardResult { blocked: boolean; requiresApproval: boolean; reason?: string }`, `checkGuard(action: Action, workspaceRoot: string): GuardResult`
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `tests/core/guard.test.ts`:
 
@@ -1116,14 +1116,14 @@ describe('checkGuard', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/core/guard.test.ts
 ```
 Expected: FAIL -- module not found.
 
-- [ ] **Step 3: Create src/core/guard.ts**
+- [x] **Step 3: Create src/core/guard.ts**
 
 ```typescript
 import type { Action } from '../types';
@@ -1175,14 +1175,14 @@ function isWithinWorkspace(filePath: string, workspaceRoot: string): boolean {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify pass**
+- [x] **Step 4: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/core/guard.test.ts
 ```
 Expected: 9 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/core/guard.ts tests/core/guard.test.ts
@@ -1200,7 +1200,7 @@ git commit -m "feat: add guardrail system with dangerous command detection and w
 - Consumes: `ToolResult` from Task 2, `ToolDefinition` from Task 3
 - Produces: `Tool` interface, `ToolRegistry` class, 4 tool implementations
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `tests/tools/registry.test.ts`:
 
@@ -1252,14 +1252,14 @@ describe('Shell tool', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/tools/registry.test.ts tests/tools/shell.test.ts
 ```
 Expected: FAIL -- modules not found.
 
-- [ ] **Step 3: Create src/tools/types.ts**
+- [x] **Step 3: Create src/tools/types.ts**
 
 ```typescript
 import type { ToolResult } from '../types';
@@ -1275,7 +1275,7 @@ export interface Tool {
 }
 ```
 
-- [ ] **Step 4: Create src/tools/registry.ts**
+- [x] **Step 4: Create src/tools/registry.ts**
 
 ```typescript
 import type { Tool } from './types';
@@ -1300,7 +1300,7 @@ export class ToolRegistry {
 }
 ```
 
-- [ ] **Step 5: Create src/tools/read-file.ts**
+- [x] **Step 5: Create src/tools/read-file.ts**
 
 ```typescript
 import type { Tool } from './types';
@@ -1328,7 +1328,7 @@ export const readFileTool: Tool = {
 };
 ```
 
-- [ ] **Step 6: Create src/tools/write-file.ts**
+- [x] **Step 6: Create src/tools/write-file.ts**
 
 ```typescript
 import type { Tool } from './types';
@@ -1361,7 +1361,7 @@ export const writeFileTool: Tool = {
 };
 ```
 
-- [ ] **Step 7: Create src/tools/shell.ts**
+- [x] **Step 7: Create src/tools/shell.ts**
 
 ```typescript
 import type { Tool } from './types';
@@ -1402,7 +1402,7 @@ export const shellTool: Tool = {
 };
 ```
 
-- [ ] **Step 8: Create src/tools/run-test.ts**
+- [x] **Step 8: Create src/tools/run-test.ts**
 
 ```typescript
 import type { Tool } from './types';
@@ -1438,14 +1438,14 @@ export const runTestTool: Tool = {
 };
 ```
 
-- [ ] **Step 9: Run tests to verify pass**
+- [x] **Step 9: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/tools/registry.test.ts tests/tools/shell.test.ts
 ```
 Expected: 4 tests PASS.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add src/tools/ tests/tools/
@@ -1464,7 +1464,7 @@ git commit -m "feat: add tool system with registry, read_file, write_file, shell
 - Consumes: `Message` from Task 2
 - Produces: `WorkingMemory` class, `SessionStore` class, `SessionMemoryEntry` type
 
-- [ ] **Step 1: Write failing test for WorkingMemory**
+- [x] **Step 1: Write failing test for WorkingMemory**
 
 Create `tests/memory/working-memory.test.ts`:
 
@@ -1510,7 +1510,7 @@ describe('WorkingMemory', () => {
 });
 ```
 
-- [ ] **Step 2: Write failing test for SessionStore**
+- [x] **Step 2: Write failing test for SessionStore**
 
 Create `tests/memory/session-store.test.ts`:
 
@@ -1556,14 +1556,14 @@ describe('SessionStore', () => {
 });
 ```
 
-- [ ] **Step 3: Run tests to verify failure**
+- [x] **Step 3: Run tests to verify failure**
 
 ```bash
 npx vitest run tests/memory/working-memory.test.ts tests/memory/session-store.test.ts
 ```
 Expected: FAIL -- modules not found.
 
-- [ ] **Step 4: Create src/memory/types.ts**
+- [x] **Step 4: Create src/memory/types.ts**
 
 ```typescript
 export interface SessionMemoryEntry {
@@ -1578,7 +1578,7 @@ export interface SessionMemoryEntry {
 }
 ```
 
-- [ ] **Step 5: Create src/memory/working-memory.ts**
+- [x] **Step 5: Create src/memory/working-memory.ts**
 
 ```typescript
 import type { Message } from '../types';
@@ -1609,7 +1609,7 @@ export class WorkingMemory {
 }
 ```
 
-- [ ] **Step 6: Create src/memory/session-store.ts**
+- [x] **Step 6: Create src/memory/session-store.ts**
 
 ```typescript
 import Database from 'better-sqlite3';
@@ -1664,14 +1664,14 @@ export class SessionStore {
 }
 ```
 
-- [ ] **Step 7: Run tests to verify pass**
+- [x] **Step 7: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/memory/working-memory.test.ts tests/memory/session-store.test.ts
 ```
 Expected: 7 tests PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/memory/types.ts src/memory/working-memory.ts src/memory/session-store.ts tests/memory/
@@ -1689,7 +1689,7 @@ git commit -m "feat: add L1 working memory and L2 session store with SQLite"
 - Consumes: `Action`, `ToolResult` from Task 2; `ToolRegistry` from Task 9; `GuardResult` from Task 8
 - Produces: `executeAction(action: Action, registry: ToolRegistry, context: ToolContext): Promise<ToolResult>`
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `tests/core/executor.test.ts`:
 
@@ -1736,14 +1736,14 @@ describe('executeAction', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/core/executor.test.ts
 ```
 Expected: FAIL -- module not found.
 
-- [ ] **Step 3: Create src/core/executor.ts**
+- [x] **Step 3: Create src/core/executor.ts**
 
 ```typescript
 import type { Action, ToolResult } from '../types';
@@ -1764,14 +1764,14 @@ export async function executeAction(
 }
 ```
 
-- [ ] **Step 4: Run tests to verify pass**
+- [x] **Step 4: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/core/executor.test.ts
 ```
 Expected: 3 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/core/executor.ts tests/core/executor.test.ts
@@ -1790,7 +1790,7 @@ git commit -m "feat: add action executor that dispatches to tool registry"
 - Consumes: `ToolResult` from Task 2
 - Produces: `Feedback { verdict, shouldStop, summary, failures? }`, `validateFeedback(result: ToolResult): Feedback`
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `tests/core/feedback.test.ts`:
 
@@ -1859,14 +1859,14 @@ Tests: 1 passed, 1 failed, 2 total`;
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/core/feedback.test.ts
 ```
 Expected: FAIL -- module not found.
 
-- [ ] **Step 3: Create src/core/feedback.ts**
+- [x] **Step 3: Create src/core/feedback.ts**
 
 ```typescript
 import type { ToolResult } from '../types';
@@ -1960,14 +1960,14 @@ function parseTestFailures(output: string): TestFailure[] {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify pass**
+- [x] **Step 4: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/core/feedback.test.ts
 ```
 Expected: 6 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/core/feedback.ts tests/core/feedback.test.ts
@@ -1985,7 +1985,7 @@ git commit -m "feat: add feedback validator with test output parsing (Jest/Mocha
 - Consumes: `SessionStore` from Task 10
 - Produces: `SessionRetriever` class with `retrieve(query: string, topK: number): Promise<SessionMemoryEntry[]>`
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `tests/memory/session-retriever.test.ts`:
 
@@ -2033,14 +2033,14 @@ describe('SessionRetriever', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/memory/session-retriever.test.ts
 ```
 Expected: FAIL -- module not found.
 
-- [ ] **Step 3: Create src/memory/session-retriever.ts**
+- [x] **Step 3: Create src/memory/session-retriever.ts**
 
 ```typescript
 import type { SessionStore } from './session-store';
@@ -2081,14 +2081,14 @@ function extractKeywords(query: string): string[] {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify pass**
+- [x] **Step 4: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/memory/session-retriever.test.ts
 ```
 Expected: 4 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/memory/session-retriever.ts tests/memory/session-retriever.test.ts
@@ -2107,7 +2107,7 @@ git commit -m "feat: add L2 session retriever with keyword extraction and confid
 - Consumes: `SessionRetriever` from Task 13, `WorkingMemory` from Task 10, `Message` from Task 2
 - Produces: `ContextInjector` class, `Compressor` class
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `tests/memory/context-injector.test.ts`:
 
@@ -2203,14 +2203,14 @@ describe('Compressor', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 ```bash
 npx vitest run tests/memory/context-injector.test.ts tests/memory/compressor.test.ts
 ```
 Expected: FAIL -- modules not found.
 
-- [ ] **Step 3: Create src/memory/context-injector.ts**
+- [x] **Step 3: Create src/memory/context-injector.ts**
 
 ```typescript
 import type { SessionRetriever } from './session-retriever';
@@ -2254,7 +2254,7 @@ export class ContextInjector {
 }
 ```
 
-- [ ] **Step 4: Create src/memory/compressor.ts**
+- [x] **Step 4: Create src/memory/compressor.ts**
 
 ```typescript
 import type { Message } from '../types';
@@ -2297,14 +2297,14 @@ function estimateTokens(messages: Message[]): number {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify pass**
+- [x] **Step 5: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/memory/context-injector.test.ts tests/memory/compressor.test.ts
 ```
 Expected: 5 tests PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/memory/context-injector.ts src/memory/compressor.ts tests/memory/context-injector.test.ts tests/memory/compressor.test.ts
@@ -2322,7 +2322,7 @@ git commit -m "feat: add context injector and compressor for memory management"
 - Consumes: All previous modules (LLM, parser, guard, executor, feedback, memory)
 - Produces: `runLoop(task: string, config: Config, llm: LLMProvider, memory: MemoryManager, registry: ToolRegistry): Promise<LoopResult>`
 
-- [ ] **Step 1: Write failing test (mock LLM driven)**
+- [x] **Step 1: Write failing test (mock LLM driven)**
 
 Create `tests/core/loop.test.ts`:
 
@@ -2400,14 +2400,14 @@ describe('runLoop', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/core/loop.test.ts
 ```
 Expected: FAIL -- module not found.
 
-- [ ] **Step 3: Create src/core/loop.ts**
+- [x] **Step 3: Create src/core/loop.ts**
 
 ```typescript
 import type { LoopResult, Message, Action } from '../types';
@@ -2510,14 +2510,14 @@ When tests fail, fix the code and run tests again.`,
 }
 ```
 
-- [ ] **Step 4: Run tests to verify pass**
+- [x] **Step 4: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/core/loop.test.ts
 ```
 Expected: 2 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/core/loop.ts tests/core/loop.test.ts
@@ -2535,7 +2535,7 @@ git commit -m "feat: add main agent loop with mock-LLM-driven integration test"
 - Consumes: `runLoop` from Task 15, `loadConfig` from Task 2, `createLLMProvider` from Task 6, `ToolRegistry` from Task 9
 - Produces: CLI with `harness run <task>` command
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `tests/cli.test.ts`:
 
@@ -2557,14 +2557,14 @@ describe('CLI', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npm run build && npx vitest run tests/cli.test.ts
 ```
 Expected: FAIL -- CLI not implemented.
 
-- [ ] **Step 3: Rewrite src/index.ts**
+- [x] **Step 3: Rewrite src/index.ts**
 
 ```typescript
 #!/usr/bin/env node
@@ -2628,14 +2628,14 @@ function loadApiKeys(): Record<string, string> {
 program.parse();
 ```
 
-- [ ] **Step 4: Build and run tests**
+- [x] **Step 4: Build and run tests**
 
 ```bash
 npm run build && npx vitest run tests/cli.test.ts
 ```
 Expected: 2 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/index.ts tests/cli.test.ts
@@ -2654,7 +2654,7 @@ git commit -m "feat: add CLI entry point with commander"
 - Consumes: Memory types from Task 10
 - Produces: `ProjectStore` class, `ProjectRetriever` class with cosine similarity search
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `tests/memory/project-store.test.ts`:
 
@@ -2733,14 +2733,14 @@ describe('ProjectRetriever', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/memory/project-store.test.ts tests/memory/project-retriever.test.ts
 ```
 Expected: FAIL -- modules not found.
 
-- [ ] **Step 3: Create src/memory/project-store.ts**
+- [x] **Step 3: Create src/memory/project-store.ts**
 
 ```typescript
 import Database from 'better-sqlite3';
@@ -2797,7 +2797,7 @@ export class ProjectStore {
 }
 ```
 
-- [ ] **Step 4: Create src/memory/project-retriever.ts**
+- [x] **Step 4: Create src/memory/project-retriever.ts**
 
 ```typescript
 import type { ProjectStore, ProjectMemoryEntry } from './project-store';
@@ -2848,14 +2848,14 @@ function cosineSimilarity(a: Float32Array, b: Float32Array): number {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify pass**
+- [x] **Step 5: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/memory/project-store.test.ts tests/memory/project-retriever.test.ts
 ```
 Expected: 5 tests PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/memory/project-store.ts src/memory/project-retriever.ts tests/memory/project-store.test.ts tests/memory/project-retriever.test.ts
@@ -2873,7 +2873,7 @@ git commit -m "feat: add L3 project memory with vector store and cosine similari
 - Consumes: All memory modules from Tasks 10, 13, 14, 17
 - Produces: `MemoryManager` class that wraps all memory layers
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `tests/memory/memory-manager.test.ts`:
 
@@ -2907,14 +2907,14 @@ describe('MemoryManager', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/memory/memory-manager.test.ts
 ```
 Expected: FAIL -- module not found.
 
-- [ ] **Step 3: Create src/memory/index.ts**
+- [x] **Step 3: Create src/memory/index.ts**
 
 ```typescript
 import type { MemoryConfig } from '../config/types';
@@ -2991,14 +2991,14 @@ function extractBasicKeywords(text: string): string {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify pass**
+- [x] **Step 4: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/memory/memory-manager.test.ts
 ```
 Expected: 2 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/memory/index.ts tests/memory/memory-manager.test.ts
@@ -3016,7 +3016,7 @@ git commit -m "feat: add MemoryManager facade for all memory layers"
 **Interfaces:**
 - Produces: `CredentialManager` with `set(provider, key)`, `get(provider): string | null`, `has(provider): boolean`, `delete(provider)`, `status(): Record<string, 'configured' | 'not configured'>`
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `tests/credentials/manager.test.ts`:
 
@@ -3055,14 +3055,14 @@ describe('CredentialManager', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/credentials/manager.test.ts
 ```
 Expected: FAIL -- module not found.
 
-- [ ] **Step 3: Create src/credentials/manager.ts**
+- [x] **Step 3: Create src/credentials/manager.ts**
 
 ```typescript
 export class CredentialManager {
@@ -3095,7 +3095,7 @@ export class CredentialManager {
 }
 ```
 
-- [ ] **Step 4: Create placeholder files for keytar integration**
+- [x] **Step 4: Create placeholder files for keytar integration**
 
 Create `src/credentials/store.ts`:
 
@@ -3163,14 +3163,14 @@ export async function promptForKey(provider: string): Promise<string> {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify pass**
+- [x] **Step 5: Run tests to verify pass**
 
 ```bash
 npx vitest run tests/credentials/manager.test.ts
 ```
 Expected: 4 tests PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/credentials/ tests/credentials/
@@ -3187,7 +3187,7 @@ git commit -m "feat: add credential management with in-memory store and keytar i
 **Interfaces:**
 - Consumes: `checkGuard` from Task 8, `validateFeedback` from Task 12, `MemoryManager` from Task 18
 
-- [ ] **Step 1: Write demo runner test**
+- [x] **Step 1: Write demo runner test**
 
 Create `tests/demos.test.ts`:
 
@@ -3216,14 +3216,14 @@ describe('Mechanism Demos', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```bash
 npx vitest run tests/demos.test.ts
 ```
 Expected: FAIL -- demos not found.
 
-- [ ] **Step 3: Create demos/guard-demo.ts**
+- [x] **Step 3: Create demos/guard-demo.ts**
 
 ```typescript
 import { checkGuard } from '../src/core/guard';
@@ -3262,7 +3262,7 @@ console.log(`\nResults: ${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
 ```
 
-- [ ] **Step 4: Create demos/feedback-demo.ts**
+- [x] **Step 4: Create demos/feedback-demo.ts**
 
 ```typescript
 import { validateFeedback } from '../src/core/feedback';
@@ -3325,7 +3325,7 @@ console.log(`\nResults: ${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
 ```
 
-- [ ] **Step 5: Create demos/memory-demo.ts**
+- [x] **Step 5: Create demos/memory-demo.ts**
 
 ```typescript
 import { MemoryManager } from '../src/memory';
@@ -3373,14 +3373,14 @@ async function main() {
 main().catch(console.error);
 ```
 
-- [ ] **Step 6: Run demo tests to verify**
+- [x] **Step 6: Run demo tests to verify**
 
 ```bash
 npx vitest run tests/demos.test.ts
 ```
 Expected: 3 tests PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add demos/ tests/demos.test.ts
@@ -3395,7 +3395,7 @@ git commit -m "feat: add mechanism demos for guard, feedback, and memory"
 - Create: `Dockerfile`, `.github/workflows/ci.yml`
 - Modify: `.gitignore`
 
-- [ ] **Step 1: Create Dockerfile**
+- [x] **Step 1: Create Dockerfile**
 
 ```dockerfile
 FROM node:20-alpine AS builder
@@ -3414,7 +3414,7 @@ COPY package.json ./
 ENTRYPOINT ["node", "dist/index.js"]
 ```
 
-- [ ] **Step 2: Create .github/workflows/ci.yml**
+- [x] **Step 2: Create .github/workflows/ci.yml**
 
 ```yaml
 name: CI
@@ -3452,14 +3452,14 @@ jobs:
         run: docker build -t coding-agent-harness .
 ```
 
-- [ ] **Step 3: Verify Docker build**
+- [x] **Step 3: Verify Docker build**
 
 ```bash
 docker build -t coding-agent-harness .
 ```
 Expected: builds successfully.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add Dockerfile .github/workflows/ci.yml
@@ -3473,7 +3473,7 @@ git commit -m "feat: add Dockerfile and CI workflow"
 **Files:**
 - Create: `README.md`
 
-- [ ] **Step 1: Create README.md**
+- [x] **Step 1: Create README.md**
 
 ```markdown
 # Coding Agent Harness
@@ -3583,7 +3583,7 @@ npm run demo:memory     # Memory system demo
 - L3 vector storage uses in-memory Float32Array; not suitable for very large codebases
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add README.md

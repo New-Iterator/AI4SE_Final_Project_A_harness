@@ -47,6 +47,10 @@ export class SessionStore {
     return this.db.prepare('SELECT * FROM session_memory WHERE sessionId = ? ORDER BY timestamp DESC').all(sessionId) as SessionMemoryEntry[];
   }
 
+  getAll(): SessionMemoryEntry[] {
+    return this.db.prepare('SELECT * FROM session_memory ORDER BY timestamp DESC').all() as SessionMemoryEntry[];
+  }
+
   deleteSession(sessionId: string): void {
     this.db.prepare('DELETE FROM session_memory WHERE sessionId = ?').run(sessionId);
   }
