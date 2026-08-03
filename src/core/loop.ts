@@ -39,24 +39,26 @@ export async function runLoop(
   };
   process.on('SIGINT', sigintHandler);
 
+  const platform = process.platform === 'win32' ? 'Windows' : process.platform === 'darwin' ? 'macOS' : 'Linux';
+  const platformCommands = process.platform === 'win32'
+    ? '使用 dir 列出文件, type 查看文件内容, findstr 搜索文本, mkdir 创建目录, del 删除文件'
+    : '使用 ls 列出文件, cat 查看文件内容, grep 搜索文本, mkdir 创建目录, rm 删除文件';
+  const systemPrompt = `你是一个编码智能体。当前操作系统: ${platform}。你可以读写文件、执行命令和运行测试。
+工作区: ${config.tools.workspaceRoot}
+平台命令: ${platformCommands}
+重要规则:
+1. 先创建文件再运行测试，不要对不存在的文件执行操作
+2. 当测试通过时，输出 STOP 停止
+3. 当测试失败时，修复代码并重新运行测试`;
+
   if (wm) {
     wm.clear();
-    wm.add({
-      role: 'system',
-      content: `你是一个编码智能体。你可以读写文件、执行 shell 命令和运行测试。
-工作区: ${config.tools.workspaceRoot}
-当测试通过时停止。当测试失败时，修复代码并重新运行测试。`,
-    });
+    wm.add({ role: 'system', content: systemPrompt });
     wm.add({ role: 'user', content: task });
   }
 
   let messages: Message[] = [
-    {
-      role: 'system',
-      content: `你是一个编码智能体。你可以读写文件、执行 shell 命令和运行测试。
-工作区: ${config.tools.workspaceRoot}
-当测试通过时停止。当测试失败时，修复代码并重新运行测试。`,
-    },
+    { role: 'system', content: systemPrompt },
     { role: 'user', content: task },
   ];
 
@@ -79,6 +81,7 @@ export async function runLoop(
     const response = await llmChatWithRetry(llm, { messages, tools, maxTokens: config.llm.maxTokens, temperature: config.llm.temperature });
 
     const { action, warnings } = parseActionWithWarnings(response);
+    console.log(`[LLM] 轮次 ${i + 1}: ${action.type === 'tool_call' ? action.tool : action.type}${action.type === 'tool_call' ? ' ' + JSON.stringify(action.args).slice(0, 120) : ''}${action.type === 'stop' ? ' ' + (action.reason || '') : ''}`);
     if (warnings && warnings.length > 0) {
       for (const w of warnings) {
         messages.push({ role: 'tool', content: w, toolCallId: 'warning' });

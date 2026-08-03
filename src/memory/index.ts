@@ -1,6 +1,8 @@
 import type { MemoryConfig } from '../config/types';
 import type { Message } from '../types';
 import type { SessionMemoryEntry } from './types';
+import { mkdirSync } from 'fs';
+import { dirname } from 'path';
 import { WorkingMemory } from './working-memory';
 import { SessionStore } from './session-store';
 import { SessionRetriever } from './session-retriever';
@@ -23,8 +25,10 @@ export class MemoryManager {
 
   constructor(config: MemoryConfig, maxContextTokens: number = 128000) {
     this.workingMemory = new WorkingMemory(config.workingMemoryRounds);
+    mkdirSync(dirname(config.sessionDbPath), { recursive: true });
     this.sessionStore = new SessionStore(config.sessionDbPath);
     this.sessionRetriever = new SessionRetriever(this.sessionStore);
+    mkdirSync(dirname(config.projectDbPath), { recursive: true });
     this.projectStore = new ProjectStore(config.projectDbPath);
     this.projectRetriever = new ProjectRetriever(this.projectStore);
     this.embeddingProvider = createEmbeddingProvider('mock');

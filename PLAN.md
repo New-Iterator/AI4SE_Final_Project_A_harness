@@ -1,30 +1,30 @@
-# Coding Agent Harness Implementation Plan
+# Coding Agent Harness 实现计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
+> **对于 agentic 执行者：** 必需子技能：使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 来逐任务实现此计划。步骤使用复选框（`- [x]`）语法进行跟踪。
 
-**Goal:** Build a TypeScript/Node.js Coding Agent Harness with event-driven pipeline architecture, mock-LLM-testable mechanisms, and a deep focus on memory/context engineering.
+**目标：** 构建一个 TypeScript/Node.js Coding Agent Harness，具有事件驱动的管道架构、模拟 LLM 测试机制，并深度关注内存/上下文工程。
 
-**Architecture:** Event-driven pipeline -- ContextAssembler -> LLM -> Parser -> Guard -> Executor -> Feedback -> loop. Memory layer (L1/L2/L3) as a side channel. Multi-provider LLM abstraction. Deterministic guardrail and feedback mechanisms.
+**架构：** 事件驱动管道 -- ContextAssembler -> LLM -> Parser -> Guard -> Executor -> Feedback -> 循环。内存层（L1/L2/L3）作为侧通道。多提供商 LLM 抽象。确定性的 guardrail 和 feedback 机制。
 
-**Tech Stack:** TypeScript, Node.js 20+, better-sqlite3, commander, chalk, keytar, vitest, fetch (native HTTP)
+**技术栈：** TypeScript, Node.js 20+, better-sqlite3, commander, chalk, keytar, vitest, fetch (原生 HTTP)
 
-## Global Constraints
+## 全局约束
 
-- Language: TypeScript (strict mode)
-- Runtime: Node.js 20+ (LTS)
-- Test framework: Vitest (compatible with Jest API)
-- LLM calling: Direct HTTP fetch (no vendor SDK)
-- Database: better-sqlite3 (synchronous API)
-- Credential storage: keytar (system keychain) with .env fallback
-- CLI framework: commander
-- All core mechanisms must be testable with mock/stub LLM (no network, no real LLM)
-- No placeholders, TBD, or TODO in implementation
-- TDD: every task writes failing test first, then implementation
-- Each task ends with a commit
+- 语言：TypeScript（严格模式）
+- 运行时：Node.js 20+（LTS）
+- 测试框架：Vitest（兼容 Jest API）
+- LLM 调用：直接 HTTP fetch（不使用供应商 SDK）
+- 数据库：better-sqlite3（同步 API）
+- 凭证存储：keytar（系统密钥链）配合 .env 回退
+- CLI 框架：commander
+- 所有核心机制必须可通过 mock/stub LLM 测试（无网络，无真实 LLM）
+- 实现中不得有占位符、TBD 或 TODO
+- TDD：每个任务先写失败测试，再实现
+- 每个任务以一次提交结束
 
 ---
 
-## Task Dependency Graph
+## 任务依赖图
 
 ```
 Task 1 (scaffolding)
@@ -50,27 +50,27 @@ Task 1 (scaffolding)
   +-- Task 22 (README) -- last
 ```
 
-**Parallelizable groups:**
-- Tasks 4,5,7,8,9,10 can run in parallel (after Task 3)
-- Tasks 12,13,14,19 can run in parallel (after their deps)
-- Tasks 17,18 can be deferred until after core loop works
+**可并行执行的组：**
+- 任务 4,5,7,8,9,10 可并行执行（在任务 3 之后）
+- 任务 12,13,14,19 可并行执行（在各自依赖之后）
+- 任务 17,18 可推迟到核心循环工作后再执行
 
 ---
-### Task 1: Project Scaffolding
+### 任务 1：项目脚手架
 
-**Files:**
-- Create: `package.json`, `tsconfig.json`, `vitest.config.ts`, `.gitignore`, `src/index.ts`
+**文件：**
+- 创建： `package.json`, `tsconfig.json`, `vitest.config.ts`, `.gitignore`, `src/index.ts`
 
-**Interfaces:**
-- Produces: `package.json` with all dependencies declared, `tsconfig.json` with strict mode, `vitest.config.ts` ready for testing
+**接口：**
+- 产出： `package.json` 包含所有已声明的依赖，`tsconfig.json` 包含严格模式，`vitest.config.ts` 准备好测试
 
-- [x] **Step 1: Initialize git repo**
+- [x] **步骤 1：初始化 git 仓库**
 
 ```bash
 git init
 ```
 
-- [x] **Step 2: Create package.json**
+- [x] **步骤 2：创建 package.json**
 
 ```json
 {
@@ -103,7 +103,7 @@ git init
 }
 ```
 
-- [x] **Step 3: Create tsconfig.json**
+- [x] **步骤 3：创建 tsconfig.json**
 
 ```json
 {
@@ -126,7 +126,7 @@ git init
 }
 ```
 
-- [x] **Step 4: Create vitest.config.ts**
+- [x] **步骤 4： 创建 vitest.config.ts**
 
 ```typescript
 import { defineConfig } from 'vitest/config';
@@ -140,7 +140,7 @@ export default defineConfig({
 });
 ```
 
-- [x] **Step 5: Create .gitignore**
+- [x] **步骤 5：创建 .gitignore**
 
 ```
 node_modules/
@@ -151,34 +151,34 @@ dist/
 *.db-journal
 ```
 
-- [x] **Step 6: Create placeholder src/index.ts**
+- [x] **步骤 6：创建占位 src/index.ts**
 
 ```typescript
 #!/usr/bin/env node
 console.log('Coding Agent Harness');
 ```
 
-- [x] **Step 7: Install dependencies and verify**
+- [x] **步骤 7：安装依赖并验证**
 
 ```bash
 npm install
 ```
 
-- [x] **Step 8: Run build to verify**
+- [x] **步骤 8：运行构建验证**
 
 ```bash
 npm run build
 ```
-Expected: compiles without errors, `dist/index.js` created.
+预期结果： 编译无错误，`dist/index.js` 已创建。
 
-- [x] **Step 9: Run tests to verify vitest works**
+- [x] **步骤 9：运行测试验证 vitest 正常工作**
 
 ```bash
 npm test
 ```
-Expected: "No test files found" or passes.
+预期结果： "没有找到测试文件" 或通过。
 
-- [x] **Step 10: Commit**
+- [x] **步骤 10：提交**
 
 ```bash
 git add .
@@ -187,18 +187,18 @@ git commit -m "chore: scaffold project with TypeScript, Vitest, dependencies"
 
 ---
 
-### Task 2: Shared Types and Config Loader
+### 任务 2：共享类型和配置加载器
 
-**Files:**
-- Create: `src/types.ts`, `src/config/types.ts`, `src/config/loader.ts`
-- Test: `tests/config/loader.test.ts`
+**文件：**
+- 创建： `src/types.ts`, `src/config/types.ts`, `src/config/loader.ts`
+- 测试： `tests/config/loader.test.ts`
 
-**Interfaces:**
-- Produces: `Action`, `ToolResult`, `Message`, `ToolCall`, `LoopResult` types; `Config` interface; `loadConfig(cwd?: string): Config` function
+**接口：**
+- 产出： `Action`, `ToolResult`, `Message`, `ToolCall`, `LoopResult` 类型；`Config` 接口；`loadConfig(cwd?: string): Config` 函数
 
-- [x] **Step 1: Write failing test**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/config/loader.test.ts`:
+创建 `tests/config/loader.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -239,14 +239,14 @@ describe('loadConfig', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/config/loader.test.ts
 ```
-Expected: FAIL -- module not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/types.ts**
+- [x] **步骤 3： 创建 src/types.ts**
 
 ```typescript
 export interface Action {
@@ -285,7 +285,7 @@ export interface LoopResult {
 }
 ```
 
-- [x] **Step 4: Create src/config/types.ts**
+- [x] **步骤 4： 创建 src/config/types.ts**
 
 ```typescript
 export interface Config {
@@ -331,7 +331,7 @@ export const DEFAULT_CONFIG: Config = {
 };
 ```
 
-- [x] **Step 5: Create src/config/loader.ts**
+- [x] **步骤 5： 创建 src/config/loader.ts**
 
 ```typescript
 import { readFileSync, existsSync } from 'fs';
@@ -372,14 +372,14 @@ function deepMerge(target: Record<string, unknown>, source: Record<string, unkno
 }
 ```
 
-- [x] **Step 6: Run tests to verify pass**
+- [x] **步骤 6： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/config/loader.test.ts
 ```
-Expected: PASS.
+预期结果： PASS.
 
-- [x] **Step 7: Commit**
+- [x] **步骤 7： 提交**
 
 ```bash
 git add src/types.ts src/config/types.ts src/config/loader.ts tests/config/loader.test.ts
@@ -387,18 +387,18 @@ git commit -m "feat: add shared types and config loader with defaults"
 ```
 
 
-### Task 3: LLM Abstraction Types
+### 任务 3：LLM 抽象类型
 
-**Files:**
-- Create: `src/core/llm/types.ts`
-- Test: `tests/core/llm/types.test.ts`
+**文件：**
+- 创建： `src/core/llm/types.ts`
+- 测试： `tests/core/llm/types.test.ts`
 
-**Interfaces:**
-- Produces: `LLMProvider`, `ChatRequest`, `ChatResponse`, `ToolDefinition` interfaces
+**接口：**
+- 产出： `LLMProvider`, `ChatRequest`, `ChatResponse`, `ToolDefinition` 接口
 
-- [x] **Step 1: Write failing test**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/core/llm/types.test.ts`:
+创建 `tests/core/llm/types.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -411,14 +411,14 @@ describe('LLM types', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/core/llm/types.test.ts
 ```
-Expected: FAIL -- module not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/core/llm/types.ts**
+- [x] **步骤 3： 创建 src/core/llm/types.ts**
 
 ```typescript
 import type { Message, ToolCall } from '../../types';
@@ -447,14 +447,14 @@ export interface LLMProvider {
 }
 ```
 
-- [x] **Step 4: Run test to verify pass**
+- [x] **步骤 4： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/core/llm/types.test.ts
 ```
-Expected: PASS.
+预期结果： PASS.
 
-- [x] **Step 5: Commit**
+- [x] **步骤 5： 提交**
 
 ```bash
 git add src/core/llm/types.ts tests/core/llm/types.test.ts
@@ -463,19 +463,19 @@ git commit -m "feat: add LLM abstraction types"
 
 ---
 
-### Task 4: Mock LLM Implementation
+### 任务 4：Mock LLM 实现
 
-**Files:**
-- Create: `src/core/llm/mock.ts`
-- Test: `tests/core/llm/mock.test.ts`
+**文件：**
+- 创建： `src/core/llm/mock.ts`
+- 测试： `tests/core/llm/mock.test.ts`
 
-**Interfaces:**
-- Consumes: `LLMProvider`, `ChatRequest`, `ChatResponse` from Task 3
-- Produces: `MockLLMProvider` class with script mode and replay mode
+**接口：**
+- 消费： `LLMProvider`, `ChatRequest`, `ChatResponse` 来自任务 3
+- 产出： `MockLLMProvider` 类，包含 script 模式和 replay 模式
 
-- [x] **Step 1: Write failing test**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/core/llm/mock.test.ts`:
+创建 `tests/core/llm/mock.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -542,14 +542,14 @@ describe('MockLLMProvider', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/core/llm/mock.test.ts
 ```
-Expected: FAIL -- module not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/core/llm/mock.ts**
+- [x] **步骤 3： 创建 src/core/llm/mock.ts**
 
 ```typescript
 import type { LLMProvider, ChatRequest, ChatResponse } from './types';
@@ -587,14 +587,14 @@ export class MockLLMProvider implements LLMProvider {
 }
 ```
 
-- [x] **Step 4: Run tests to verify pass**
+- [x] **步骤 4： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/core/llm/mock.test.ts
 ```
-Expected: 6 tests PASS.
+预期结果： 6 个测试通过。
 
-- [x] **Step 5: Commit**
+- [x] **步骤 5： 提交**
 
 ```bash
 git add src/core/llm/mock.ts tests/core/llm/mock.test.ts
@@ -602,19 +602,19 @@ git commit -m "feat: add MockLLMProvider with script and replay modes"
 ```
 
 
-### Task 5: LLM Adapters (OpenAI, Anthropic, OpenAI-compat)
+### 任务 5：LLM 适配器（OpenAI、Anthropic、OpenAI-compat）
 
-**Files:**
-- Create: `src/core/llm/openai.ts`, `src/core/llm/anthropic.ts`, `src/core/llm/openai-compat.ts`
-- Test: `tests/core/llm/adapters.test.ts`
+**文件：**
+- 创建： `src/core/llm/openai.ts`, `src/core/llm/anthropic.ts`, `src/core/llm/openai-compat.ts`
+- 测试： `tests/core/llm/adapters.test.ts`
 
-**Interfaces:**
-- Consumes: `LLMProvider`, `ChatRequest`, `ChatResponse` from Task 3
-- Produces: `OpenAIProvider`, `AnthropicProvider`, `OpenAICompatProvider` classes
+**接口：**
+- 消费： `LLMProvider`, `ChatRequest`, `ChatResponse` 来自任务 3
+- 产出： `OpenAIProvider`, `AnthropicProvider`, `OpenAICompatProvider` 类
 
-- [x] **Step 1: Write failing test**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/core/llm/adapters.test.ts`:
+创建 `tests/core/llm/adapters.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -650,14 +650,14 @@ describe('LLM Adapters', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/core/llm/adapters.test.ts
 ```
-Expected: FAIL -- modules not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/core/llm/openai.ts**
+- [x] **步骤 3： 创建 src/core/llm/openai.ts**
 
 ```typescript
 import type { LLMProvider, ChatRequest, ChatResponse } from './types';
@@ -712,7 +712,7 @@ export class OpenAIProvider implements LLMProvider {
 }
 ```
 
-- [x] **Step 4: Create src/core/llm/anthropic.ts**
+- [x] **步骤 4： 创建 src/core/llm/anthropic.ts**
 
 ```typescript
 import type { LLMProvider, ChatRequest, ChatResponse } from './types';
@@ -764,7 +764,7 @@ export class AnthropicProvider implements LLMProvider {
 }
 ```
 
-- [x] **Step 5: Create src/core/llm/openai-compat.ts**
+- [x] **步骤 5： 创建 src/core/llm/openai-compat.ts**
 
 ```typescript
 import { OpenAIProvider } from './openai';
@@ -776,14 +776,14 @@ export class OpenAICompatProvider extends OpenAIProvider {
 }
 ```
 
-- [x] **Step 6: Run tests to verify pass**
+- [x] **步骤 6： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/core/llm/adapters.test.ts
 ```
-Expected: 6 tests PASS.
+预期结果： 6 个测试通过。
 
-- [x] **Step 7: Commit**
+- [x] **步骤 7： 提交**
 
 ```bash
 git add src/core/llm/openai.ts src/core/llm/anthropic.ts src/core/llm/openai-compat.ts tests/core/llm/adapters.test.ts
@@ -792,19 +792,19 @@ git commit -m "feat: add OpenAI, Anthropic, and OpenAI-compat LLM adapters"
 
 ---
 
-### Task 6: LLM Provider Factory
+### 任务 6：LLM 提供商工厂
 
-**Files:**
-- Create: `src/core/llm/factory.ts`
-- Test: `tests/core/llm/factory.test.ts`
+**文件：**
+- 创建： `src/core/llm/factory.ts`
+- 测试： `tests/core/llm/factory.test.ts`
 
-**Interfaces:**
-- Consumes: `LLMProvider` from Task 3; `MockLLMProvider` from Task 4; adapters from Task 5; `Config` from Task 2
-- Produces: `createLLMProvider(config: Config, apiKeys: Record<string, string>): LLMProvider`
+**接口：**
+- 消费： `LLMProvider` 来自任务 3; `MockLLMProvider` 来自任务 4; 适配器 来自任务 5; `Config` 来自任务 2
+- 产出： `createLLMProvider(config: Config, apiKeys: Record<string, string>): LLMProvider`
 
-- [x] **Step 1: Write failing test**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/core/llm/factory.test.ts`:
+创建 `tests/core/llm/factory.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -857,14 +857,14 @@ describe('createLLMProvider', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/core/llm/factory.test.ts
 ```
-Expected: FAIL -- module not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/core/llm/factory.ts**
+- [x] **步骤 3： 创建 src/core/llm/factory.ts**
 
 ```typescript
 import type { LLMProvider } from './types';
@@ -902,14 +902,14 @@ export function createLLMProvider(config: Config, apiKeys: Record<string, string
 }
 ```
 
-- [x] **Step 4: Run tests to verify pass**
+- [x] **步骤 4： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/core/llm/factory.test.ts
 ```
-Expected: 6 tests PASS.
+预期结果： 6 个测试通过。
 
-- [x] **Step 5: Commit**
+- [x] **步骤 5： 提交**
 
 ```bash
 git add src/core/llm/factory.ts tests/core/llm/factory.test.ts
@@ -917,19 +917,19 @@ git commit -m "feat: add LLM provider factory"
 ```
 
 
-### Task 7: Action Parser
+### 任务 7：Action 解析器
 
-**Files:**
-- Create: `src/core/parser.ts`
-- Test: `tests/core/parser.test.ts`
+**文件：**
+- 创建： `src/core/parser.ts`
+- 测试： `tests/core/parser.test.ts`
 
-**Interfaces:**
-- Consumes: `Action` from Task 2, `ChatResponse` from Task 3
-- Produces: `parseAction(response: ChatResponse): Action`
+**接口：**
+- 消费： `Action` 来自任务 2, `ChatResponse` 来自任务 3
+- 产出： `parseAction(response: ChatResponse): Action`
 
-- [x] **Step 1: Write failing test**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/core/parser.test.ts`:
+创建 `tests/core/parser.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -988,14 +988,14 @@ describe('parseAction', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/core/parser.test.ts
 ```
-Expected: FAIL -- module not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/core/parser.ts**
+- [x] **步骤 3： 创建 src/core/parser.ts**
 
 ```typescript
 import type { Action } from '../types';
@@ -1020,14 +1020,14 @@ export function parseAction(response: ChatResponse): Action {
 }
 ```
 
-- [x] **Step 4: Run tests to verify pass**
+- [x] **步骤 4： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/core/parser.test.ts
 ```
-Expected: 5 tests PASS.
+预期结果： 5 个测试通过。
 
-- [x] **Step 5: Commit**
+- [x] **步骤 5： 提交**
 
 ```bash
 git add src/core/parser.ts tests/core/parser.test.ts
@@ -1036,19 +1036,19 @@ git commit -m "feat: add action parser for LLM responses"
 
 ---
 
-### Task 8: Guardrail System
+### 任务 8：Guardrail 系统
 
-**Files:**
-- Create: `src/core/guard.ts`
-- Test: `tests/core/guard.test.ts`
+**文件：**
+- 创建： `src/core/guard.ts`
+- 测试： `tests/core/guard.test.ts`
 
-**Interfaces:**
-- Consumes: `Action` from Task 2
-- Produces: `GuardResult { blocked: boolean; requiresApproval: boolean; reason?: string }`, `checkGuard(action: Action, workspaceRoot: string): GuardResult`
+**接口：**
+- 消费： `Action` 来自任务 2
+- 产出： `GuardResult { blocked: boolean; requiresApproval: boolean; reason?: string }`, `checkGuard(action: Action, workspaceRoot: string): GuardResult`
 
-- [x] **Step 1: Write failing test**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/core/guard.test.ts`:
+创建 `tests/core/guard.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -1116,14 +1116,14 @@ describe('checkGuard', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/core/guard.test.ts
 ```
-Expected: FAIL -- module not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/core/guard.ts**
+- [x] **步骤 3： 创建 src/core/guard.ts**
 
 ```typescript
 import type { Action } from '../types';
@@ -1175,14 +1175,14 @@ function isWithinWorkspace(filePath: string, workspaceRoot: string): boolean {
 }
 ```
 
-- [x] **Step 4: Run tests to verify pass**
+- [x] **步骤 4： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/core/guard.test.ts
 ```
-Expected: 9 tests PASS.
+预期结果： 9 个测试通过。
 
-- [x] **Step 5: Commit**
+- [x] **步骤 5： 提交**
 
 ```bash
 git add src/core/guard.ts tests/core/guard.test.ts
@@ -1190,19 +1190,19 @@ git commit -m "feat: add guardrail system with dangerous command detection and w
 ```
 
 
-### Task 9: Tool System (Types, Registry, All Tools)
+### 任务 9：工具系统（类型、注册表、所有工具）
 
-**Files:**
-- Create: `src/tools/types.ts`, `src/tools/registry.ts`, `src/tools/read-file.ts`, `src/tools/write-file.ts`, `src/tools/shell.ts`, `src/tools/run-test.ts`
-- Test: `tests/tools/registry.test.ts`, `tests/tools/shell.test.ts`
+**文件：**
+- 创建： `src/tools/types.ts`, `src/tools/registry.ts`, `src/tools/read-file.ts`, `src/tools/write-file.ts`, `src/tools/shell.ts`, `src/tools/run-test.ts`
+- 测试： `tests/tools/registry.test.ts`, `tests/tools/shell.test.ts`
 
-**Interfaces:**
-- Consumes: `ToolResult` from Task 2, `ToolDefinition` from Task 3
-- Produces: `Tool` interface, `ToolRegistry` class, 4 tool implementations
+**接口：**
+- 消费： `ToolResult` 来自任务 2, `ToolDefinition` 来自任务 3
+- 产出： `Tool` 接口，`ToolRegistry` 类，4 个工具实现
 
-- [x] **Step 1: Write failing tests**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/tools/registry.test.ts`:
+创建 `tests/tools/registry.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -1238,7 +1238,7 @@ describe('ToolRegistry', () => {
 });
 ```
 
-Create `tests/tools/shell.test.ts`:
+创建 `tests/tools/shell.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -1252,14 +1252,14 @@ describe('Shell tool', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/tools/registry.test.ts tests/tools/shell.test.ts
 ```
-Expected: FAIL -- modules not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/tools/types.ts**
+- [x] **步骤 3： 创建 src/tools/types.ts**
 
 ```typescript
 import type { ToolResult } from '../types';
@@ -1275,7 +1275,7 @@ export interface Tool {
 }
 ```
 
-- [x] **Step 4: Create src/tools/registry.ts**
+- [x] **步骤 4： 创建 src/tools/registry.ts**
 
 ```typescript
 import type { Tool } from './types';
@@ -1300,7 +1300,7 @@ export class ToolRegistry {
 }
 ```
 
-- [x] **Step 5: Create src/tools/read-file.ts**
+- [x] **步骤 5： 创建 src/tools/read-file.ts**
 
 ```typescript
 import type { Tool } from './types';
@@ -1328,7 +1328,7 @@ export const readFileTool: Tool = {
 };
 ```
 
-- [x] **Step 6: Create src/tools/write-file.ts**
+- [x] **步骤 6： 创建 src/tools/write-file.ts**
 
 ```typescript
 import type { Tool } from './types';
@@ -1361,7 +1361,7 @@ export const writeFileTool: Tool = {
 };
 ```
 
-- [x] **Step 7: Create src/tools/shell.ts**
+- [x] **步骤 7： 创建 src/tools/shell.ts**
 
 ```typescript
 import type { Tool } from './types';
@@ -1402,7 +1402,7 @@ export const shellTool: Tool = {
 };
 ```
 
-- [x] **Step 8: Create src/tools/run-test.ts**
+- [x] **步骤 8： 创建 src/tools/run-test.ts**
 
 ```typescript
 import type { Tool } from './types';
@@ -1438,14 +1438,14 @@ export const runTestTool: Tool = {
 };
 ```
 
-- [x] **Step 9: Run tests to verify pass**
+- [x] **步骤 9： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/tools/registry.test.ts tests/tools/shell.test.ts
 ```
-Expected: 4 tests PASS.
+预期结果： 4 个测试通过。
 
-- [x] **Step 10: Commit**
+- [x] **步骤 10：提交**
 
 ```bash
 git add src/tools/ tests/tools/
@@ -1454,19 +1454,19 @@ git commit -m "feat: add tool system with registry, read_file, write_file, shell
 
 ---
 
-### Task 10: Memory Layer (L1 Working Memory + L2 Session Store)
+### 任务 10：内存层（L1 工作内存 + L2 会话存储）
 
-**Files:**
-- Create: `src/memory/types.ts`, `src/memory/working-memory.ts`, `src/memory/session-store.ts`
-- Test: `tests/memory/working-memory.test.ts`, `tests/memory/session-store.test.ts`
+**文件：**
+- 创建： `src/memory/types.ts`, `src/memory/working-memory.ts`, `src/memory/session-store.ts`
+- 测试： `tests/memory/working-memory.test.ts`, `tests/memory/session-store.test.ts`
 
-**Interfaces:**
-- Consumes: `Message` from Task 2
-- Produces: `WorkingMemory` class, `SessionStore` class, `SessionMemoryEntry` type
+**接口：**
+- 消费： `Message` 来自任务 2
+- 产出： `WorkingMemory` 类，`SessionStore` 类，`SessionMemoryEntry` 类型
 
-- [x] **Step 1: Write failing test for WorkingMemory**
+- [x] **步骤 1：编写失败测试（WorkingMemory）**
 
-Create `tests/memory/working-memory.test.ts`:
+创建 `tests/memory/working-memory.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -1510,9 +1510,9 @@ describe('WorkingMemory', () => {
 });
 ```
 
-- [x] **Step 2: Write failing test for SessionStore**
+- [x] **步骤 2：编写失败测试（SessionStore）**
 
-Create `tests/memory/session-store.test.ts`:
+创建 `tests/memory/session-store.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -1556,14 +1556,14 @@ describe('SessionStore', () => {
 });
 ```
 
-- [x] **Step 3: Run tests to verify failure**
+- [x] **步骤 3： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/memory/working-memory.test.ts tests/memory/session-store.test.ts
 ```
-Expected: FAIL -- modules not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 4: Create src/memory/types.ts**
+- [x] **步骤 4： 创建 src/memory/types.ts**
 
 ```typescript
 export interface SessionMemoryEntry {
@@ -1578,7 +1578,7 @@ export interface SessionMemoryEntry {
 }
 ```
 
-- [x] **Step 5: Create src/memory/working-memory.ts**
+- [x] **步骤 5： 创建 src/memory/working-memory.ts**
 
 ```typescript
 import type { Message } from '../types';
@@ -1609,7 +1609,7 @@ export class WorkingMemory {
 }
 ```
 
-- [x] **Step 6: Create src/memory/session-store.ts**
+- [x] **步骤 6： 创建 src/memory/session-store.ts**
 
 ```typescript
 import Database from 'better-sqlite3';
@@ -1664,14 +1664,14 @@ export class SessionStore {
 }
 ```
 
-- [x] **Step 7: Run tests to verify pass**
+- [x] **步骤 7： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/memory/working-memory.test.ts tests/memory/session-store.test.ts
 ```
-Expected: 7 tests PASS.
+预期结果： 7 个测试通过。
 
-- [x] **Step 8: Commit**
+- [x] **步骤 8： 提交**
 
 ```bash
 git add src/memory/types.ts src/memory/working-memory.ts src/memory/session-store.ts tests/memory/
@@ -1679,19 +1679,19 @@ git commit -m "feat: add L1 working memory and L2 session store with SQLite"
 ```
 
 
-### Task 11: Action Executor
+### 任务 11：Action 执行器
 
-**Files:**
-- Create: `src/core/executor.ts`
-- Test: `tests/core/executor.test.ts`
+**文件：**
+- 创建： `src/core/executor.ts`
+- 测试： `tests/core/executor.test.ts`
 
-**Interfaces:**
-- Consumes: `Action`, `ToolResult` from Task 2; `ToolRegistry` from Task 9; `GuardResult` from Task 8
-- Produces: `executeAction(action: Action, registry: ToolRegistry, context: ToolContext): Promise<ToolResult>`
+**接口：**
+- 消费： `Action`, `ToolResult` 来自任务 2; `ToolRegistry` 来自任务 9; `GuardResult` 来自任务 8
+- 产出： `executeAction(action: Action, registry: ToolRegistry, context: ToolContext): Promise<ToolResult>`
 
-- [x] **Step 1: Write failing test**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/core/executor.test.ts`:
+创建 `tests/core/executor.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -1736,14 +1736,14 @@ describe('executeAction', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/core/executor.test.ts
 ```
-Expected: FAIL -- module not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/core/executor.ts**
+- [x] **步骤 3： 创建 src/core/executor.ts**
 
 ```typescript
 import type { Action, ToolResult } from '../types';
@@ -1764,14 +1764,14 @@ export async function executeAction(
 }
 ```
 
-- [x] **Step 4: Run tests to verify pass**
+- [x] **步骤 4： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/core/executor.test.ts
 ```
-Expected: 3 tests PASS.
+预期结果： 3 个测试通过。
 
-- [x] **Step 5: Commit**
+- [x] **步骤 5： 提交**
 
 ```bash
 git add src/core/executor.ts tests/core/executor.test.ts
@@ -1780,19 +1780,19 @@ git commit -m "feat: add action executor that dispatches to tool registry"
 
 ---
 
-### Task 12: Feedback Validator
+### 任务 12：Feedback 验证器
 
-**Files:**
-- Create: `src/core/feedback.ts`
-- Test: `tests/core/feedback.test.ts`
+**文件：**
+- 创建： `src/core/feedback.ts`
+- 测试： `tests/core/feedback.test.ts`
 
-**Interfaces:**
-- Consumes: `ToolResult` from Task 2
-- Produces: `Feedback { verdict, shouldStop, summary, failures? }`, `validateFeedback(result: ToolResult): Feedback`
+**接口：**
+- 消费： `ToolResult` 来自任务 2
+- 产出： `Feedback { verdict, shouldStop, summary, failures? }`, `validateFeedback(result: ToolResult): Feedback`
 
-- [x] **Step 1: Write failing test**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/core/feedback.test.ts`:
+创建 `tests/core/feedback.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -1832,7 +1832,7 @@ describe('validateFeedback', () => {
   + add(1, 2) should return 3
 FAIL  src/calc.test.ts
   x multiply(2, 3) should return 6
-    Expected: 6, Received: 5
+    预期结果： 6, Received: 5
 Tests: 1 passed, 1 failed, 2 total`;
     const result: ToolResult = { tool: 'run_test', stdout, stderr: '', exitCode: 1, success: false };
     const fb = validateFeedback(result);
@@ -1859,14 +1859,14 @@ Tests: 1 passed, 1 failed, 2 total`;
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/core/feedback.test.ts
 ```
-Expected: FAIL -- module not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/core/feedback.ts**
+- [x] **步骤 3： 创建 src/core/feedback.ts**
 
 ```typescript
 import type { ToolResult } from '../types';
@@ -1935,8 +1935,8 @@ function parseTestFailures(output: string): TestFailure[] {
     } else if (vitestFailMatch) {
       if (currentFailure && currentFailure.testName) failures.push(currentFailure as TestFailure);
       currentFailure = { testName: `${vitestFailMatch[1]} > ${vitestFailMatch[2]}`.trim() };
-    } else if (currentFailure && line.startsWith('Expected:')) {
-      currentFailure.expected = line.replace('Expected:', '').trim();
+    } else if (currentFailure && line.startsWith('预期结果：')) {
+      currentFailure.expected = line.replace('预期结果：', '').trim();
     } else if (currentFailure && line.startsWith('Received:')) {
       currentFailure.actual = line.replace('Received:', '').trim();
     } else if (currentFailure && line && !line.startsWith('PASS') && !line.startsWith('Tests:')) {
@@ -1960,14 +1960,14 @@ function parseTestFailures(output: string): TestFailure[] {
 }
 ```
 
-- [x] **Step 4: Run tests to verify pass**
+- [x] **步骤 4： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/core/feedback.test.ts
 ```
-Expected: 6 tests PASS.
+预期结果： 6 个测试通过。
 
-- [x] **Step 5: Commit**
+- [x] **步骤 5： 提交**
 
 ```bash
 git add src/core/feedback.ts tests/core/feedback.test.ts
@@ -1975,19 +1975,19 @@ git commit -m "feat: add feedback validator with test output parsing (Jest/Mocha
 ```
 
 
-### Task 13: L2 Session Retriever
+### 任务 13：L2 会话检索器
 
-**Files:**
-- Create: `src/memory/session-retriever.ts`
-- Test: `tests/memory/session-retriever.test.ts`
+**文件：**
+- 创建： `src/memory/session-retriever.ts`
+- 测试： `tests/memory/session-retriever.test.ts`
 
-**Interfaces:**
-- Consumes: `SessionStore` from Task 10
-- Produces: `SessionRetriever` class with `retrieve(query: string, topK: number): Promise<SessionMemoryEntry[]>`
+**接口：**
+- 消费： `SessionStore` 来自任务 10
+- 产出： `SessionRetriever` 类，包含 `retrieve(query: string, topK: number): Promise<SessionMemoryEntry[]>`
 
-- [x] **Step 1: Write failing test**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/memory/session-retriever.test.ts`:
+创建 `tests/memory/session-retriever.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -2033,14 +2033,14 @@ describe('SessionRetriever', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/memory/session-retriever.test.ts
 ```
-Expected: FAIL -- module not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/memory/session-retriever.ts**
+- [x] **步骤 3： 创建 src/memory/session-retriever.ts**
 
 ```typescript
 import type { SessionStore } from './session-store';
@@ -2081,14 +2081,14 @@ function extractKeywords(query: string): string[] {
 }
 ```
 
-- [x] **Step 4: Run tests to verify pass**
+- [x] **步骤 4： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/memory/session-retriever.test.ts
 ```
-Expected: 4 tests PASS.
+预期结果： 4 个测试通过。
 
-- [x] **Step 5: Commit**
+- [x] **步骤 5： 提交**
 
 ```bash
 git add src/memory/session-retriever.ts tests/memory/session-retriever.test.ts
@@ -2097,19 +2097,19 @@ git commit -m "feat: add L2 session retriever with keyword extraction and confid
 
 ---
 
-### Task 14: Context Injector and Compressor
+### 任务 14：上下文注入器和压缩器
 
-**Files:**
-- Create: `src/memory/context-injector.ts`, `src/memory/compressor.ts`
-- Test: `tests/memory/context-injector.test.ts`, `tests/memory/compressor.test.ts`
+**文件：**
+- 创建： `src/memory/context-injector.ts`, `src/memory/compressor.ts`
+- 测试： `tests/memory/context-injector.test.ts`, `tests/memory/compressor.test.ts`
 
-**Interfaces:**
-- Consumes: `SessionRetriever` from Task 13, `WorkingMemory` from Task 10, `Message` from Task 2
-- Produces: `ContextInjector` class, `Compressor` class
+**接口：**
+- 消费： `SessionRetriever` 来自任务 13, `WorkingMemory` 来自任务 10, `Message` 来自任务 2
+- 产出： `ContextInjector` 类，`Compressor` 类
 
-- [x] **Step 1: Write failing tests**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/memory/context-injector.test.ts`:
+创建 `tests/memory/context-injector.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -2156,7 +2156,7 @@ describe('ContextInjector', () => {
 });
 ```
 
-Create `tests/memory/compressor.test.ts`:
+创建 `tests/memory/compressor.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -2203,14 +2203,14 @@ describe('Compressor', () => {
 });
 ```
 
-- [x] **Step 2: Run tests to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/memory/context-injector.test.ts tests/memory/compressor.test.ts
 ```
-Expected: FAIL -- modules not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/memory/context-injector.ts**
+- [x] **步骤 3： 创建 src/memory/context-injector.ts**
 
 ```typescript
 import type { SessionRetriever } from './session-retriever';
@@ -2254,7 +2254,7 @@ export class ContextInjector {
 }
 ```
 
-- [x] **Step 4: Create src/memory/compressor.ts**
+- [x] **步骤 4： 创建 src/memory/compressor.ts**
 
 ```typescript
 import type { Message } from '../types';
@@ -2297,14 +2297,14 @@ function estimateTokens(messages: Message[]): number {
 }
 ```
 
-- [x] **Step 5: Run tests to verify pass**
+- [x] **步骤 5： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/memory/context-injector.test.ts tests/memory/compressor.test.ts
 ```
-Expected: 5 tests PASS.
+预期结果： 5 个测试通过。
 
-- [x] **Step 6: Commit**
+- [x] **步骤 6： 提交**
 
 ```bash
 git add src/memory/context-injector.ts src/memory/compressor.ts tests/memory/context-injector.test.ts tests/memory/compressor.test.ts
@@ -2312,19 +2312,19 @@ git commit -m "feat: add context injector and compressor for memory management"
 ```
 
 
-### Task 15: Main Agent Loop
+### 任务 15：主 Agent 循环
 
-**Files:**
-- Create: `src/core/loop.ts`
-- Test: `tests/core/loop.test.ts`
+**文件：**
+- 创建： `src/core/loop.ts`
+- 测试： `tests/core/loop.test.ts`
 
-**Interfaces:**
-- Consumes: All previous modules (LLM, parser, guard, executor, feedback, memory)
-- Produces: `runLoop(task: string, config: Config, llm: LLMProvider, memory: MemoryManager, registry: ToolRegistry): Promise<LoopResult>`
+**接口：**
+- 消费： 所有之前的模块（LLM、parser、guard、executor、feedback、memory）
+- 产出： `runLoop(task: string, config: Config, llm: LLMProvider, memory: MemoryManager, registry: ToolRegistry): Promise<LoopResult>`
 
-- [x] **Step 1: Write failing test (mock LLM driven)**
+- [x] **步骤 1：编写失败测试（mock LLM 驱动）**
 
-Create `tests/core/loop.test.ts`:
+创建 `tests/core/loop.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -2400,14 +2400,14 @@ describe('runLoop', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/core/loop.test.ts
 ```
-Expected: FAIL -- module not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/core/loop.ts**
+- [x] **步骤 3： 创建 src/core/loop.ts**
 
 ```typescript
 import type { LoopResult, Message, Action } from '../types';
@@ -2510,14 +2510,14 @@ When tests fail, fix the code and run tests again.`,
 }
 ```
 
-- [x] **Step 4: Run tests to verify pass**
+- [x] **步骤 4： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/core/loop.test.ts
 ```
-Expected: 2 tests PASS.
+预期结果： 2 个测试通过。
 
-- [x] **Step 5: Commit**
+- [x] **步骤 5： 提交**
 
 ```bash
 git add src/core/loop.ts tests/core/loop.test.ts
@@ -2525,19 +2525,19 @@ git commit -m "feat: add main agent loop with mock-LLM-driven integration test"
 ```
 
 
-### Task 16: CLI Entry Point
+### 任务 16：CLI 入口点
 
-**Files:**
-- Modify: `src/index.ts`
-- Test: `tests/cli.test.ts`
+**文件：**
+- 修改： `src/index.ts`
+- 测试： `tests/cli.test.ts`
 
-**Interfaces:**
-- Consumes: `runLoop` from Task 15, `loadConfig` from Task 2, `createLLMProvider` from Task 6, `ToolRegistry` from Task 9
-- Produces: CLI with `harness run <task>` command
+**接口：**
+- 消费： `runLoop` 来自任务 15, `loadConfig` 来自任务 2, `createLLMProvider` 来自任务 6, `ToolRegistry` 来自任务 9
+- 产出： CLI，包含 `harness run <task>` 命令
 
-- [x] **Step 1: Write failing test**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/cli.test.ts`:
+创建 `tests/cli.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -2557,14 +2557,14 @@ describe('CLI', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npm run build && npx vitest run tests/cli.test.ts
 ```
-Expected: FAIL -- CLI not implemented.
+预期结果： FAIL -- CLI 未实现。
 
-- [x] **Step 3: Rewrite src/index.ts**
+- [x] **步骤 3： 重写 src/index.ts**
 
 ```typescript
 #!/usr/bin/env node
@@ -2628,14 +2628,14 @@ function loadApiKeys(): Record<string, string> {
 program.parse();
 ```
 
-- [x] **Step 4: Build and run tests**
+- [x] **步骤 4： 构建并运行测试**
 
 ```bash
 npm run build && npx vitest run tests/cli.test.ts
 ```
-Expected: 2 tests PASS.
+预期结果： 2 个测试通过。
 
-- [x] **Step 5: Commit**
+- [x] **步骤 5： 提交**
 
 ```bash
 git add src/index.ts tests/cli.test.ts
@@ -2644,19 +2644,19 @@ git commit -m "feat: add CLI entry point with commander"
 
 ---
 
-### Task 17: L3 Project Memory (Vector Store and Retriever)
+### 任务 17：L3 项目内存（向量存储和检索器）
 
-**Files:**
-- Create: `src/memory/project-store.ts`, `src/memory/project-retriever.ts`
-- Test: `tests/memory/project-store.test.ts`, `tests/memory/project-retriever.test.ts`
+**文件：**
+- 创建： `src/memory/project-store.ts`, `src/memory/project-retriever.ts`
+- 测试： `tests/memory/project-store.test.ts`, `tests/memory/project-retriever.test.ts`
 
-**Interfaces:**
-- Consumes: Memory types from Task 10
-- Produces: `ProjectStore` class, `ProjectRetriever` class with cosine similarity search
+**接口：**
+- 消费： Memory 类型来自任务 10
+- 产出： `ProjectStore` 类，`ProjectRetriever` 类，包含余弦相似度搜索
 
-- [x] **Step 1: Write failing tests**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/memory/project-store.test.ts`:
+创建 `tests/memory/project-store.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -2696,7 +2696,7 @@ describe('ProjectStore', () => {
 });
 ```
 
-Create `tests/memory/project-retriever.test.ts`:
+创建 `tests/memory/project-retriever.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -2733,14 +2733,14 @@ describe('ProjectRetriever', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/memory/project-store.test.ts tests/memory/project-retriever.test.ts
 ```
-Expected: FAIL -- modules not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/memory/project-store.ts**
+- [x] **步骤 3： 创建 src/memory/project-store.ts**
 
 ```typescript
 import Database from 'better-sqlite3';
@@ -2797,7 +2797,7 @@ export class ProjectStore {
 }
 ```
 
-- [x] **Step 4: Create src/memory/project-retriever.ts**
+- [x] **步骤 4： 创建 src/memory/project-retriever.ts**
 
 ```typescript
 import type { ProjectStore, ProjectMemoryEntry } from './project-store';
@@ -2848,14 +2848,14 @@ function cosineSimilarity(a: Float32Array, b: Float32Array): number {
 }
 ```
 
-- [x] **Step 5: Run tests to verify pass**
+- [x] **步骤 5： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/memory/project-store.test.ts tests/memory/project-retriever.test.ts
 ```
-Expected: 5 tests PASS.
+预期结果： 5 个测试通过。
 
-- [x] **Step 6: Commit**
+- [x] **步骤 6： 提交**
 
 ```bash
 git add src/memory/project-store.ts src/memory/project-retriever.ts tests/memory/project-store.test.ts tests/memory/project-retriever.test.ts
@@ -2863,19 +2863,19 @@ git commit -m "feat: add L3 project memory with vector store and cosine similari
 ```
 
 
-### Task 18: MemoryManager Facade
+### 任务 18：MemoryManager 外观
 
-**Files:**
-- Create: `src/memory/index.ts`
-- Test: `tests/memory/memory-manager.test.ts`
+**文件：**
+- 创建： `src/memory/index.ts`
+- 测试： `tests/memory/memory-manager.test.ts`
 
-**Interfaces:**
-- Consumes: All memory modules from Tasks 10, 13, 14, 17
-- Produces: `MemoryManager` class that wraps all memory layers
+**接口：**
+- 消费： 所有内存模块来自任务 10, 13, 14, 17
+- 产出： `MemoryManager` 类，包装所有内存层
 
-- [x] **Step 1: Write failing test**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/memory/memory-manager.test.ts`:
+创建 `tests/memory/memory-manager.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -2907,14 +2907,14 @@ describe('MemoryManager', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/memory/memory-manager.test.ts
 ```
-Expected: FAIL -- module not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/memory/index.ts**
+- [x] **步骤 3： 创建 src/memory/index.ts**
 
 ```typescript
 import type { MemoryConfig } from '../config/types';
@@ -2991,14 +2991,14 @@ function extractBasicKeywords(text: string): string {
 }
 ```
 
-- [x] **Step 4: Run tests to verify pass**
+- [x] **步骤 4： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/memory/memory-manager.test.ts
 ```
-Expected: 2 tests PASS.
+预期结果： 2 个测试通过。
 
-- [x] **Step 5: Commit**
+- [x] **步骤 5： 提交**
 
 ```bash
 git add src/memory/index.ts tests/memory/memory-manager.test.ts
@@ -3007,18 +3007,18 @@ git commit -m "feat: add MemoryManager facade for all memory layers"
 
 ---
 
-### Task 19: Credential Management
+### 任务 19：凭证管理
 
-**Files:**
-- Create: `src/credentials/store.ts`, `src/credentials/retrieve.ts`, `src/credentials/prompt.ts`, `src/credentials/manager.ts`
-- Test: `tests/credentials/manager.test.ts`
+**文件：**
+- 创建： `src/credentials/store.ts`, `src/credentials/retrieve.ts`, `src/credentials/prompt.ts`, `src/credentials/manager.ts`
+- 测试： `tests/credentials/manager.test.ts`
 
-**Interfaces:**
-- Produces: `CredentialManager` with `set(provider, key)`, `get(provider): string | null`, `has(provider): boolean`, `delete(provider)`, `status(): Record<string, 'configured' | 'not configured'>`
+**接口：**
+- 产出： `CredentialManager`，包含 `set(provider, key)`, `get(provider): string | null`, `has(provider): boolean`, `delete(provider)`, `status(): Record<string, 'configured' | 'not configured'>`
 
-- [x] **Step 1: Write failing test**
+- [x] **步骤 1：编写失败测试**
 
-Create `tests/credentials/manager.test.ts`:
+创建 `tests/credentials/manager.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -3055,14 +3055,14 @@ describe('CredentialManager', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/credentials/manager.test.ts
 ```
-Expected: FAIL -- module not found.
+预期结果： FAIL -- 模块未找到。
 
-- [x] **Step 3: Create src/credentials/manager.ts**
+- [x] **步骤 3： 创建 src/credentials/manager.ts**
 
 ```typescript
 export class CredentialManager {
@@ -3095,9 +3095,9 @@ export class CredentialManager {
 }
 ```
 
-- [x] **Step 4: Create placeholder files for keytar integration**
+- [x] **步骤 4： 创建 keytar 集成的占位文件**
 
-Create `src/credentials/store.ts`:
+创建 `src/credentials/store.ts`:
 
 ```typescript
 export async function storeInKeychain(provider: string, key: string): Promise<void> {
@@ -3110,7 +3110,7 @@ export async function storeInKeychain(provider: string, key: string): Promise<vo
 }
 ```
 
-Create `src/credentials/retrieve.ts`:
+创建 `src/credentials/retrieve.ts`:
 
 ```typescript
 export async function retrieveFromKeychain(provider: string): Promise<string | null> {
@@ -3123,7 +3123,7 @@ export async function retrieveFromKeychain(provider: string): Promise<string | n
 }
 ```
 
-Create `src/credentials/prompt.ts`:
+创建 `src/credentials/prompt.ts`:
 
 ```typescript
 import { createInterface } from 'readline';
@@ -3163,14 +3163,14 @@ export async function promptForKey(provider: string): Promise<string> {
 }
 ```
 
-- [x] **Step 5: Run tests to verify pass**
+- [x] **步骤 5： 运行测试验证通过**
 
 ```bash
 npx vitest run tests/credentials/manager.test.ts
 ```
-Expected: 4 tests PASS.
+预期结果： 4 个测试通过。
 
-- [x] **Step 6: Commit**
+- [x] **步骤 6： 提交**
 
 ```bash
 git add src/credentials/ tests/credentials/
@@ -3178,18 +3178,18 @@ git commit -m "feat: add credential management with in-memory store and keytar i
 ```
 
 
-### Task 20: Mechanism Demos (Guard, Feedback, Memory)
+### 任务 20：机制演示（Guard、Feedback、Memory）
 
-**Files:**
-- Create: `demos/guard-demo.ts`, `demos/feedback-demo.ts`, `demos/memory-demo.ts`
-- Test: `tests/demos.test.ts` (runs all demos)
+**文件：**
+- 创建： `demos/guard-demo.ts`, `demos/feedback-demo.ts`, `demos/memory-demo.ts`
+- 测试： `tests/demos.test.ts` （运行所有演示）
 
-**Interfaces:**
-- Consumes: `checkGuard` from Task 8, `validateFeedback` from Task 12, `MemoryManager` from Task 18
+**接口：**
+- 消费： `checkGuard` 来自任务 8, `validateFeedback` 来自任务 12, `MemoryManager` 来自任务 18
 
-- [x] **Step 1: Write demo runner test**
+- [x] **步骤 1：编写演示运行器测试**
 
-Create `tests/demos.test.ts`:
+创建 `tests/demos.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -3216,14 +3216,14 @@ describe('Mechanism Demos', () => {
 });
 ```
 
-- [x] **Step 2: Run test to verify failure**
+- [x] **步骤 2： 运行测试验证失败**
 
 ```bash
 npx vitest run tests/demos.test.ts
 ```
-Expected: FAIL -- demos not found.
+预期结果： FAIL -- 演示未找到。
 
-- [x] **Step 3: Create demos/guard-demo.ts**
+- [x] **步骤 3：创建 demos/guard-demo.ts**
 
 ```typescript
 import { checkGuard } from '../src/core/guard';
@@ -3262,7 +3262,7 @@ console.log(`\nResults: ${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
 ```
 
-- [x] **Step 4: Create demos/feedback-demo.ts**
+- [x] **步骤 4：创建 demos/feedback-demo.ts**
 
 ```typescript
 import { validateFeedback } from '../src/core/feedback';
@@ -3282,7 +3282,7 @@ const failResult: ToolResult = {
   tool: 'run_test',
   stdout: `FAIL  src/calc.test.ts
   x multiply(2, 3) should return 6
-    Expected: 6
+    预期结果： 6
     Received: 5
 Tests: 1 failed, 1 total`,
   stderr: '',
@@ -3325,7 +3325,7 @@ console.log(`\nResults: ${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
 ```
 
-- [x] **Step 5: Create demos/memory-demo.ts**
+- [x] **步骤 5：创建 demos/memory-demo.ts**
 
 ```typescript
 import { MemoryManager } from '../src/memory';
@@ -3373,14 +3373,14 @@ async function main() {
 main().catch(console.error);
 ```
 
-- [x] **Step 6: Run demo tests to verify**
+- [x] **步骤 6： 运行演示测试验证**
 
 ```bash
 npx vitest run tests/demos.test.ts
 ```
-Expected: 3 tests PASS.
+预期结果： 3 个测试通过。
 
-- [x] **Step 7: Commit**
+- [x] **步骤 7： 提交**
 
 ```bash
 git add demos/ tests/demos.test.ts
@@ -3389,13 +3389,13 @@ git commit -m "feat: add mechanism demos for guard, feedback, and memory"
 
 ---
 
-### Task 21: Docker and CI Configuration
+### 任务 21：Docker 和 CI 配置
 
-**Files:**
-- Create: `Dockerfile`, `.github/workflows/ci.yml`
-- Modify: `.gitignore`
+**文件：**
+- 创建： `Dockerfile`, `.github/workflows/ci.yml`
+- 修改： `.gitignore`
 
-- [x] **Step 1: Create Dockerfile**
+- [x] **步骤 1： 创建 Dockerfile**
 
 ```dockerfile
 FROM node:20-alpine AS builder
@@ -3414,7 +3414,7 @@ COPY package.json ./
 ENTRYPOINT ["node", "dist/index.js"]
 ```
 
-- [x] **Step 2: Create .github/workflows/ci.yml**
+- [x] **步骤 2： 创建 .github/workflows/ci.yml**
 
 ```yaml
 name: CI
@@ -3452,14 +3452,14 @@ jobs:
         run: docker build -t coding-agent-harness .
 ```
 
-- [x] **Step 3: Verify Docker build**
+- [x] **步骤 3： 验证 Docker 构建**
 
 ```bash
 docker build -t coding-agent-harness .
 ```
-Expected: builds successfully.
+预期结果： 构建成功。
 
-- [x] **Step 4: Commit**
+- [x] **步骤 4： 提交**
 
 ```bash
 git add Dockerfile .github/workflows/ci.yml
@@ -3468,12 +3468,12 @@ git commit -m "feat: add Dockerfile and CI workflow"
 
 ---
 
-### Task 22: README
+### 任务 22：README
 
-**Files:**
-- Create: `README.md`
+**文件：**
+- 创建： `README.md`
 
-- [x] **Step 1: Create README.md**
+- [x] **步骤 1： 创建 README.md**
 
 ```markdown
 # Coding Agent Harness
@@ -3583,7 +3583,7 @@ npm run demo:memory     # Memory system demo
 - L3 vector storage uses in-memory Float32Array; not suitable for very large codebases
 ```
 
-- [x] **Step 2: Commit**
+- [x] **步骤 2： 提交**
 
 ```bash
 git add README.md

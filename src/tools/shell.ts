@@ -6,7 +6,7 @@ export const shellTool: Tool = {
     type: 'function',
     function: {
       name: 'shell',
-      description: 'Execute a shell command',
+      description: `Execute a shell command. On Windows (cmd.exe): use 'dir' to list files, 'type' to view files, 'mkdir' to create directories, 'del' to delete files, 'findstr' to search. On Unix: use 'ls', 'cat', 'mkdir', 'rm', 'grep'.`,
       parameters: {
         type: 'object',
         properties: { command: { type: 'string', description: 'Shell command to execute' } },
