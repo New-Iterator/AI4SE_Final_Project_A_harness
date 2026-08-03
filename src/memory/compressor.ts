@@ -9,15 +9,19 @@ export class Compressor {
     mode: 'truncate' | 'summarize',
     workingMemoryRounds: number = 10
   ): Message[] {
-    const maxChars = maxTokens * CHARS_PER_TOKEN;
-    const currentChars = estimateTokens(messages) * CHARS_PER_TOKEN;
-    if (currentChars <= maxChars) return messages;
+    try {
+      const maxChars = maxTokens * CHARS_PER_TOKEN;
+      const currentChars = estimateTokens(messages) * CHARS_PER_TOKEN;
+      if (currentChars <= maxChars) return messages;
 
-    if (mode === 'summarize') {
+      if (mode === 'summarize') {
+        return this.compressTruncate(messages, maxChars, workingMemoryRounds);
+      }
+
       return this.compressTruncate(messages, maxChars, workingMemoryRounds);
+    } catch {
+      return this.compressTruncate(messages, maxTokens * CHARS_PER_TOKEN, workingMemoryRounds);
     }
-
-    return this.compressTruncate(messages, maxChars, workingMemoryRounds);
   }
 
   private compressTruncate(messages: Message[], maxChars: number, workingMemoryRounds: number): Message[] {

@@ -49,22 +49,34 @@ export function startWebServer(port: number, credManager: CredentialManager): vo
     }
 
     if (path === '/api/status') {
-      const credStatus = await credManager.status();
-      const configSummary = {
-        provider: config.llm.provider,
-        model: config.llm.model,
-        maxIterations: config.loop.maxIterations,
-        workspaceRoot: config.tools.workspaceRoot,
-      };
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.end(JSON.stringify({ credentials: credStatus, config: configSummary, uptime: process.uptime() }));
+      try {
+        const credStatus = await credManager.status();
+        const configSummary = {
+          provider: config.llm.provider,
+          model: config.llm.model,
+          maxIterations: config.loop.maxIterations,
+          workspaceRoot: config.tools.workspaceRoot,
+        };
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify({ credentials: credStatus, config: configSummary, uptime: process.uptime() }));
+      } catch {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify({ error: 'Failed to load status' }));
+      }
       return;
     }
 
     if (path === '/api/credentials') {
-      const credStatus = await credManager.status();
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.end(JSON.stringify({ credentials: credStatus }));
+      try {
+        const credStatus = await credManager.status();
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify({ credentials: credStatus }));
+      } catch {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify({ error: 'Failed to load credentials' }));
+      }
       return;
     }
 
@@ -81,12 +93,14 @@ export function startWebServer(port: number, credManager: CredentialManager): vo
         const entries = sessionId
           ? memory.getSessionStore().getBySession(sessionId)
           : memory.getSessionStore().getAll();
+        const l3Count = memory.getProjectStore().getAll().length;
         memory.close();
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.end(JSON.stringify({ entries, count: entries.length }));
+        res.end(JSON.stringify({ entries, count: entries.length, l3Count }));
       } catch {
+        console.warn('[Harness Web] 记忆数据库读取失败');
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.end(JSON.stringify({ entries: [], count: 0 }));
+        res.end(JSON.stringify({ entries: [], count: 0, l3Count: 0 }));
       }
       return;
     }
@@ -121,8 +135,14 @@ export function startWebServer(port: number, credManager: CredentialManager): vo
     }
 
     if (path === '/api/config') {
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.end(JSON.stringify(config));
+      try {
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify(config));
+      } catch {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.end(JSON.stringify({ error: 'Failed to load config' }));
+      }
       return;
     }
 

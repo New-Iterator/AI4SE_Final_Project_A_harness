@@ -32,3 +32,12 @@ export interface LoopResult {
   reason: string;
   iterations: number;
 }
+
+export interface Session {
+  id: string;
+  task: string;
+  status: 'running' | 'success' | 'failed' | 'timeout' | 'cancelled';
+  iterations: number;
+  startedAt: number;
+  endedAt?: number;
+}

@@ -22,7 +22,7 @@ export class MockEmbeddingProvider implements EmbeddingProvider {
 }
 
 export class OpenAIEmbeddingProvider implements EmbeddingProvider {
-  readonly dimensions = EMBEDDING_DIM;
+  readonly dimensions = 1536;
   private apiKey: string;
   private model: string;
   private baseUrl: string;

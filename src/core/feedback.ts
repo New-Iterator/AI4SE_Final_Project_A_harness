@@ -29,6 +29,10 @@ export function validateFeedback(result: ToolResult): Feedback {
   const failures = parseTestFailures(stdout + '\n' + stderr);
 
   if (result.exitCode === 0 && failures.length === 0) {
+    const isTestOutput = /(passed|failed|Tests:|PASS|FAIL|passing|failing)/i.test(stdout);
+    if (!isTestOutput) {
+      return { verdict: 'neutral', shouldStop: false, summary: 'Unable to parse test output' };
+    }
     const passedMatch = stdout.match(/(\d+)\s+passed/);
     const passed = passedMatch ? parseInt(passedMatch[1], 10) : 'all';
     return { verdict: 'pass', shouldStop: true, summary: `${passed} tests passed` };
