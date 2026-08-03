@@ -111,7 +111,30 @@ LLM 只能"决定下一步做什么"，但无法自主作用于外部世界。�
 
 **边界条件**：空命令 → 放行；非 shell 工具 → 跳过命令检查
 
-**HITL 审批**：当 `requiresApproval === true` 时，暂停循环，在 CLI 显示动作详情，等待用户输入 `y/n`，超时 60s 默认拒绝
+**HITL 审批状态机**：
+
+当 `requiresApproval === true` 时，进入 HITL（Human-in-the-Loop）状态机：
+
+```
+状态: IDLE → WAITING → APPROVED → 继续执行
+                    → DENIED  → 注入拒绝反馈，继续下一轮
+                    → TIMEOUT → 注入超时拒绝反馈，继续下一轮
+```
+
+| 状态 | 描述 | 触发条件 | 后续行为 |
+|------|------|---------|---------|
+| IDLE | 正常执行中 | 护栏检查通过 | 无 HITL 介入 |
+| WAITING | 等待人工审批 | 护栏返回 `requiresApproval=true` | 暂停循环，在 CLI 显示动作详情（工具、参数、危险原因），等待用户输入 |
+| APPROVED | 用户批准 | 用户输入 `y`（60s 内） | 恢复循环，执行动作 |
+| DENIED | 用户拒绝 | 用户输入 `n` 或非 `y` 的任意输入 | 注入拒绝反馈消息（`role: 'tool'`），不执行动作，继续下一轮迭代 |
+| TIMEOUT | 审批超时 | 60s 内无用户输入 | 等同于 DENIED，注入超时拒绝反馈，默认安全策略 |
+
+**HITL 输出**：`HITLResult { approved: boolean; reason: 'user_approved' | 'user_denied' | 'timeout' }`
+
+**边界条件**：
+- 用户在 WAITING 状态下按 Ctrl+C → 终止整个 loop，返回 cancelled 结果
+- 连续 3 次被拒绝的同类动作 → 自动加入黑名单，本轮不再触发 HITL（直接 block）
+- 非交互式环境（无 TTY）→ 自动拒绝，不等待用户输入
 
 ### 3.5 动作执行器 (`src/core/executor.ts`)
 
@@ -210,7 +233,42 @@ LLM 只能"决定下一步做什么"，但无法自主作用于外部世界。�
 
 **错误处理**：所有模式下的异常均降级为截断模式，确保不阻塞主循环
 
-### 3.9 配置系统 (`src/config/`)
+### 3.8 Web 管理面板 (`src/web/server.ts`)
+
+**输入**：启动参数（端口号 `port`，默认 3456）、凭据管理器实例（`CredentialManager`）
+
+**行为**：
+1. 创建 HTTP 服务，监听指定端口
+2. 根路径 `/` 返回管理面板 HTML 页面，包含以下模块：
+   - **系统状态**：显示当前配置（LLM 供应商、模型、工作区路径）、服务运行时间
+   - **凭据管理**：显示各供应商 API Key 的配置状态（已配置/未配置），不暴露明文
+   - **记忆管理**：列出当前会话记忆条目（L2），支持按 sessionId 查看和删除；显示项目记忆条目数（L3）
+   - **配置查看**：展示当前 `.harnessrc.json` 的完整配置内容
+3. `/api/status` 端点：返回 JSON 格式的系统状态数据
+4. `/api/credentials` 端点：返回凭据配置状态
+5. `/api/memory` 端点：返回记忆条目列表，支持 `?sessionId=` 查询参数过滤
+6. `/api/memory/delete` 端点（POST）：删除指定 sessionId 的记忆条目
+
+**输出**：HTML 页面（`text/html; charset=utf-8`）或 JSON 响应（API 端点）
+
+**边界条件**：
+- 端口被占用 → 启动失败，输出错误信息并退出
+- 凭据管理器未初始化 → 凭据状态显示"未配置"
+- 记忆数据库不存在 → 记忆条目数显示为 0
+- 无权限读取配置文件 → 配置查看区域显示错误提示
+
+**错误处理**：
+- HTTP 服务启动失败 → 输出错误信息到 stderr，退出码 1
+- API 端点异常 → 返回 500 状态码 + JSON 错误信息
+- 记忆数据库读取失败 → 返回空列表 + 警告日志
+
+**验收标准**：
+- `harness web` 启动后，浏览器访问 `http://localhost:3456` 可看到管理面板
+- 管理面板显示正确的配置状态和凭据状态
+- 已写入的记忆条目可在管理面板中查看
+- 管理面板可删除指定会话的记忆
+
+### 3.10 配置系统 (`src/config/`)
 
 **配置文件**：`.harnessrc.json`，位于项目根目录或用户 home 目录
 
@@ -229,7 +287,7 @@ LLM 只能"决定下一步做什么"，但无法自主作用于外部世界。�
 
 **加载优先级**：项目目录 `.harnessrc.json` > home 目录 `~/.harnessrc.json` > 默认值
 
-### 3.10 凭据管理 (`src/credentials/`)
+### 3.11 凭据管理 (`src/credentials/`)
 
 **存储方案**：使用 `keytar`（跨平台系统钥匙串）存储 API Key
 
@@ -293,7 +351,7 @@ LLM 只能"决定下一步做什么"，但无法自主作用于外部世界。�
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        CLI Entry (index.ts)                      │
-│  commands: run | key set/status/delete | config show             │
+│  commands: run | key set/delete/status | web | memory forget/clean│
 └─────────────────────────────────────────────────────────────────┘
                                   │
                                   ▼
@@ -550,9 +608,9 @@ interface TestFailure {
 | 向量存储 | 自定义实现 | 满足"自己实现，不寄生框架"的要求 |
 | 分发 | Docker + npm | Docker 确保环境一致；npm 方便开发者直接安装 |
 
-### 不需要前端
+### Web 管理面板
 
-纯 CLI 项目，豁免 Open Design 要求。
+项目包含一个基于 Node.js HTTP 的 Web 管理面板（`harness web` 命令），用于查看系统状态、凭据配置、记忆条目和运行参数。这满足了通用要求中对 WebUI 接口的要求，同时保持了 CLI 作为主要交互方式的设计定位。
 
 ---
 
@@ -570,6 +628,7 @@ interface TestFailure {
 | 分发 | `docker build && docker run` 可运行；`npm install -g` 可运行 |
 | mock 测试 | 护栏、反馈、记忆检索、上下文注入 4 个模块的单元测试在 mock LLM 下通过 |
 | 机制演示 | 三个演示脚本可确定性地复现：护栏拦截、反馈闭环、记忆检索 |
+| Web 管理面板 | `harness web` 启动后可访问管理面板，显示系统状态、凭据配置、记忆条目 |
 
 ---
 
@@ -660,6 +719,26 @@ docker run -v $(pwd):/workspace -e OPENAI_API_KEY=$OPENAI_API_KEY coding-agent-h
 
 **CI 构建**：GitHub Actions 在每次 push 时运行测试，并在 tag 时构建并推送 Docker 镜像到 GitHub Container Registry。
 
+### 云部署
+
+**目标平台**：Render（免费版），支持从 GitHub 仓库直接导入 Node.js 项目。
+
+**部署架构**：
+```
+Render Cloud
+├── Web Service (Node.js)
+│   ├── Build: npm ci && npm run build
+│   ├── Start: node dist/src/index.js web
+│   └── Port: 3456 (Render 自动映射到 80/443)
+└── Public URL: https://<app-name>.onrender.com
+```
+
+**线上访问**：Web 管理面板通过 Render 提供的公网 URL 访问，支持 HTTPS。
+
+**已知限制**：Render 免费版在 15 分钟无流量后自动休眠，首次访问需等待 1-2 分钟唤醒。
+
+**备选平台**：Railway、Vercel（需配置 serverless 适配）、阿里云 ECS、腾讯云 CloudBase。
+
 ---
 
 ## 附录：项目目录结构
@@ -690,6 +769,7 @@ coding-agent-harness/
 │   │   ├── project-retriever.ts
 │   │   ├── context-injector.ts
 │   │   ├── compressor.ts
+│   │   ├── embedding.ts
 │   │   └── index.ts
 │   ├── tools/
 │   │   ├── types.ts
@@ -701,24 +781,34 @@ coding-agent-harness/
 │   ├── config/
 │   │   ├── loader.ts
 │   │   └── types.ts
-│   └── credentials/
-│       ├── store.ts
-│       ├── retrieve.ts
-│       ├── prompt.ts
-│       └── manager.ts
+│   ├── credentials/
+│   │   └── manager.ts
+│   └── web/
+│       └── server.ts
 ├── tests/
+│   ├── cli.test.ts
+│   ├── demos.test.ts
 │   ├── core/
 │   │   ├── loop.test.ts
 │   │   ├── parser.test.ts
 │   │   ├── guard.test.ts
+│   │   ├── executor.test.ts
 │   │   ├── feedback.test.ts
-│   │   └── llm/
-│   │       └── mock.test.ts
+│   │   ├── adapters.test.ts
+│   │   ├── mock-llm.test.ts
+│   │   └── llm-factory.test.ts
+│   ├── config/
+│   │   └── loader.test.ts
+│   ├── credentials/
+│   │   └── manager.test.ts
 │   ├── memory/
+│   │   ├── working-memory.test.ts
 │   │   ├── session-store.test.ts
 │   │   ├── session-retriever.test.ts
 │   │   ├── context-injector.test.ts
-│   │   └── compressor.test.ts
+│   │   ├── compressor.test.ts
+│   │   ├── memory-manager.test.ts
+│   │   └── embedding.test.ts
 │   └── tools/
 │       ├── registry.test.ts
 │       └── shell.test.ts
@@ -730,6 +820,7 @@ coding-agent-harness/
 ├── package.json
 ├── tsconfig.json
 ├── .github/workflows/ci.yml
+├── .gitlab-ci.yml
 ├── SPEC.md
 ├── PLAN.md
 ├── SPEC_PROCESS.md
