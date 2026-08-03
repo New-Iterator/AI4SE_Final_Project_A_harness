@@ -3,7 +3,7 @@ import type { Config } from '../config/types';
 import type { LLMProvider, ToolDefinition, ChatResponse } from './llm/types';
 import type { ToolRegistry } from '../tools/registry';
 import type { MemoryManager } from '../memory';
-import { parseAction } from './parser';
+import { parseAction, parseActionWithWarnings } from './parser';
 import { checkGuard } from './guard';
 import { executeAction } from './executor';
 import { validateFeedback } from './feedback';
@@ -71,7 +71,12 @@ export async function runLoop(
 
     const response = await llmChatWithRetry(llm, { messages, tools, maxTokens: config.llm.maxTokens, temperature: config.llm.temperature });
 
-    const action = parseAction(response);
+    const { action, warnings } = parseActionWithWarnings(response);
+    if (warnings && warnings.length > 0) {
+      for (const w of warnings) {
+        messages.push({ role: 'tool', content: w, toolCallId: 'warning' });
+      }
+    }
 
     if (action.type === 'stop') {
       if (memory) {
@@ -176,8 +181,10 @@ async function llmChatWithRetry(
       return await llm.chat(request);
     } catch (err: any) {
       lastError = err;
+      const is4xx = err.message?.includes('401') || err.message?.includes('403') || err.message?.includes('404') || err.message?.includes('429');
+      if (is4xx) throw err;
       if (attempt < maxRetries - 1) {
-        const delay = Math.pow(2, attempt) * 1000;
+        const delay = Math.min(Math.pow(2, attempt) * 1000, 8000);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
