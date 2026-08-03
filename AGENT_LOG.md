@@ -318,17 +318,41 @@
 
 5. **PLAN vs 实际 rootDir 偏差**：已在 SPEC_PROCESS §6 中记录（第 4 项"CI 镜像选择"实际包含了 rootDir 变更的说明——从 `./src` 改为 `.`）。
 
-**最终测试结果**：21 文件 86 测试全部通过，TypeScript 编译零错误。
+**最终测试结果**：21 文件 94 测试全部通过，TypeScript 编译零错误。
 
 **最终项目统计**：
 | 指标 | 数值 |
 |------|------|
 | 源文件 | 33 个 TypeScript 文件 |
 | 测试文件 | 21 个测试文件 |
-| 测试用例 | 86 个 |
+| 测试用例 | 94 个 |
 | 测试通过率 | 100% |
 | 演示脚本 | 3 个（guard/feedback/memory） |
-| Commit 数 | 15 次 |
+| Commit 数 | 20 次 |
 | Git 仓库 | GitLab（主）+ GitHub（镜像） |
 | CI/CD | GitLab CI（passed） |
 | 部署 | Render（免费版） |
+
+---
+
+### 2026-08-03 20:30 - Phase 15: SPEC-代码对齐循环（R1-R6）
+
+**触发**：用户要求多轮对齐循环，通过子智能体审查 SPEC 与代码一致性，逐轮修复 gap，直至基本无误。
+
+**方法论**：每轮派发 2-3 个并行子智能体划片审查（core 模块、memory+web+etc 模块），收集 gap 报告，按严重程度修复，运行测试确认，推送验证 CI。
+
+**R1（12 项修复）**：主循环 SIGINT/黑名单/空任务/HITL、解析器 fallback、LLM 4xx/5xx 重试、context-injector 重写、compressor 重写、Web /api/credentials、guard 7 个新模式测试
+
+**R2（8 项修复）**：parser STOP/DONE 与 fallthrough 交换、feedback 不可解析→neutral、Session 接口、embedding 维度 1536、Web API 错误处理+L3 计数、compressor try-catch
+
+**R3（14 项修复）**：Dashboard config 双 API 调用、has() keychain 检查、配置加载警告、run-test 60s 超时、Dockerfile WORKDIR/EXPOSE、loop 任务记录/会话摘要/TTY 检测/30s 总超时
+
+**R4（8 项修复）**：undefined tc 崩溃、shouldStop 检查、DENIED/TIMEOUT 区分、reason 字段、4xx 检测、git regex 双向、SIGINT 在 HITL 中立即终止
+
+**R5（4 项修复）**：L3 项目记忆计数、GitHub Actions CI、dotenv 集成、Session 对象生命周期管理
+
+**R6（4 项修复）**：GitHub Actions CI Docker 推送、dotenv 配置加载、Session 所有退出点状态、ci-execution.log 更新
+
+**最终状态**：21 文件 94 测试全部通过，TypeScript 编译零错误，GitLab CI passed。
+
+**遗留已知限制**：HITLHandler 可注入接口（§3.4）、compressor summarize 模式（§3.7.2）、feedback-demo 完整 mock LLM 循环（§11）、凭据 Key 零化/日志脱敏（§3.10）因架构复杂度在循环中跳过。

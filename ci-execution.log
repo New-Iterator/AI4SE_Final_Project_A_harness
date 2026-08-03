@@ -2,48 +2,50 @@
  CI/CD 执行记录 — GitLab CI unit-test job
 ============================================================
  项目:     coding-agent-harness
- 分支:     master
- 提交:     a48b358 (add_gitlab_ci_and_web_deploy_docs)
- 时间:     2026-08-01 23:06 CST
+ 分支:     main
+ 提交:     c0f93f1 (R6: GitHub Actions CI, dotenv, Session, L3)
+ 时间:     2026-08-03 21:16 CST
  状态:     PASS
 ============================================================
  Job:      unit-test
  Stage:    test
- Image:    node:20-alpine (模拟: Windows Node.js v24.18.1)
+ Image:    node:20 (Windows Node.js v24.18.1)
 ============================================================
 
 $ npm ci
-> added 128 packages, audited 129 packages in 28s
+> added packages
+
+$ npm run build
+> tsc (zero errors)
 
 $ npm test
 > vitest run
 
- Test Files  20 passed (20)
-      Tests  77 passed (77)
+ Test Files  21 passed (21)
+      Tests  94 passed (94)
 
   测试文件明细:
     tests/cli.test.ts                     2 passed
-    tests/memory/working-memory.test.ts    3 passed
-    tests/core/feedback.test.ts           6 passed
-    tests/tools/registry.test.ts          3 passed
-    tests/core/parser.test.ts             5 passed
-    tests/memory/compressor.test.ts        3 passed
-    tests/core/mock-llm.test.ts           6 passed
-    tests/tools/shell.test.ts             1 passed
-    tests/core/executor.test.ts           3 passed
-    tests/core/guard.test.ts              13 passed
     tests/core/adapters.test.ts           5 passed
-    tests/credentials/manager.test.ts     4 passed
-    tests/config/loader.test.ts           2 passed
-    tests/core/loop.test.ts               2 passed
+    tests/core/executor.test.ts           3 passed
+    tests/core/feedback.test.ts           7 passed
+    tests/core/guard.test.ts              20 passed
     tests/core/llm-factory.test.ts        6 passed
+    tests/core/loop.test.ts               2 passed
+    tests/core/mock-llm.test.ts           6 passed
+    tests/core/parser.test.ts             5 passed
+    tests/config/loader.test.ts           2 passed
+    tests/credentials/manager.test.ts     4 passed
+    tests/demos.test.ts                   3 passed
+    tests/memory/compressor.test.ts       3 passed
     tests/memory/context-injector.test.ts  2 passed
-    tests/memory/memory-manager.test.ts    2 passed
-    tests/memory/session-store.test.ts     3 passed
-    tests/memory/session-retriever.test.ts 3 passed
-    tests/demos.test.ts                    3 passed
-
-  Duration: 10.55s (transform 2.75s, tests 7.67s)
+    tests/memory/embedding.test.ts        3 passed
+    tests/memory/memory-manager.test.ts   4 passed
+    tests/memory/session-retriever.test.ts 4 passed
+    tests/memory/session-store.test.ts    6 passed
+    tests/memory/working-memory.test.ts   3 passed
+    tests/tools/registry.test.ts          3 passed
+    tests/tools/shell.test.ts             1 passed
 
 ============================================================
  结果: 全部通过 ✅

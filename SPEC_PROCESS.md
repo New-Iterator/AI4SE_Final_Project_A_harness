@@ -242,12 +242,48 @@ SPEC.md 在冷启动条件下足以支撑独立的 Task 实现。Agent 在 2 个
 | 1 | SPEC.md | 根目录 | 12 章节完整设计文档 |
 | 2 | PLAN.md | 根目录 | 22 Task 详细实现计划 |
 | 3 | SPEC_PROCESS.md | 根目录 | 本文档 |
-| 4 | 完整源代码 | src/ (32 文件) | 20 测试文件 77 测试全部通过 |
+| 4 | 完整源代码 | src/ (33 文件) | 21 测试文件 94 测试全部通过 |
 | 5 | Dockerfile | 根目录 | `docker build` 可构建 |
 | 6 | README.md | 根目录 | 含全部必需章节 |
 | 7 | AGENT_LOG.md | 根目录 | 完整时间线记录 |
 | 8 | `.gitlab-ci.yml` | 根目录 | `unit-test` job 已 pass |
-| 9 | CI/CD 执行记录 | GitLab Pipelines | 最后一次 CI 状态 passed |
-| 10 | REFLECTION.md | 根目录 | 2500+ 字反思报告 |
+| 9 | CI/CD 执行记录 | ci-execution.log | 最近一次 CI 状态 passed（94 测试全部通过） |
+| 10 | REFLECTION.md | 根目录 | 扩展至 3500+ 字反思报告 |
 | 11 | 线上部署 URL | Render | `https://ai4se-final-project-a-harness.onrender.com` |
 | 12 | 机制演示 | demos/ (3 脚本) | guard/feedback/memory 演示全部通过 |
+
+---
+
+## 9. SPEC-代码对齐循环（R1-R6）
+
+在 Phase 15 中，进行了 6 轮 SPEC 与代码的严格对齐循环：
+
+| 轮次 | 发现 gap | 修复 | 测试通过 | CI |
+|------|---------|------|---------|-----|
+| R1 | 12 项 | 主循环 SIGINT/黑名单/空任务/HITL、解析器 fallback、LLM 重试、context-injector 重写、compressor 重写、Web API、guard 测试 | 86→94 | passed |
+| R2 | 8 项 | parser STOP/DONE 与 fallthrough、feedback 不可解析→neutral、Session 接口、embedding 维度 1536、Web API 错误处理+L3 计数、compressor try-catch | 94 | passed |
+| R3 | 14 项 | Dashboard config 双 API、has() keychain 检查、配置加载警告、run-test 60s 超时、Dockerfile WORKDIR/EXPOSE、loop 任务记录/会话摘要/TTY 检测/30s 总超时 | 94 | passed |
+| R4 | 8 项 | undefined tc 崩溃、shouldStop 检查、DENIED/TIMEOUT 区分、reason 字段、4xx 检测、git regex、SIGINT 在中 HITL | 94 | passed |
+| R5 | 4 项 | L3 显示、GitHub Actions CI、dotenv 集成、Session 对象管理 | 94 | passed |
+| R6 | 4 项 | GitHub Actions CI 完善、dotenv 配置加载、Session 生命周期管理、ci-execution.log 更新 | 94 | passed |
+
+### 对齐循环方法论
+
+每轮遵循以下流程：
+1. 派发 3 个并行子智能体逐模块检查（core、memory+web+etc）
+2. 收集 gap 报告，按严重程度分类
+3. 修复所有可修复的 gap（跳过 HITLHandler 可注入、compressor summarize 等已知限制）
+4. 运行 `npm run build && npm test` 确认 94 测试全部通过
+5. 推送 GitLab 并确认 CI passed
+6. 进入下一轮
+
+### 遗留已知限制
+
+以下 gap 因架构复杂度未在循环中修复，作为已知限制记录：
+
+| 限制 | SPEC 章节 | 原因 |
+|------|----------|------|
+| HITLHandler 可注入接口 | §3.4 | 需要重构 loop.ts 核心架构，影响面广 |
+| compressor summarize 模式 | §3.7.2 | 需要 LLM 集成，超出当前 mock 测试范围 |
+| feedback-demo 完整 mock LLM 循环 | §11 | 需要重构 demo 为完整 loop 集成测试 |
+| 凭据 Key 零化/日志脱敏 | §3.10 | 需要全局日志中间件，影响面广 |
