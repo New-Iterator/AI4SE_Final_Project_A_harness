@@ -382,3 +382,32 @@
 - GitLab CI：新增 `docker-build` stage
 
 **最终状态**：21 文件 94 测试全部通过，GitLab CI + GitHub Actions 均 passed，Docker 镜像每次 push 自动构建验证。
+
+---
+
+### 2026-08-03 22:55 - Phase 17: 需求对照修复 + 工作流偏差说明
+
+**触发**：对照两份需求文档逐项检查，发现 12 项 gap。
+
+**Gap 1-3 凭据安全加强**：
+- `CredentialManager` 新增 `zeroKeys()` 方法（内存主动置零）
+- 新增 `sanitizeKey()` 导出函数（日志脱敏：`sk-***`、`Bearer ***` 替换）
+- 新增 `.husky/pre-commit` hook（检查 staged 文件中的 API Key 模式）
+- 测试：credentials 测试从 4 个扩展到 7 个
+
+**Gap 4 feedback-demo 完整闭环**：
+- 重写 `demos/feedback-demo.ts`，使用 `MockLLMProvider` + `runLoop` 实现完整 3 轮闭环（写 bug 代码 → 测试失败 → 收到反馈 → 修复代码 → 测试通过）
+- 验证 `result.success === true` 且 `result.iterations >= 3`
+
+**Gap 5-10 工作流偏差说明**：
+
+| 偏差项 | 原因 | 说明 |
+|--------|------|------|
+| git worktrees 未使用 | 单分支开发，项目规模小 | 22 个 Task 高度耦合，worktree 隔离收益低 |
+| subagent 驱动被放弃 | PLAN 代码已精确到复制粘贴级别 | Phase 5 详细记录了放弃原因 |
+| 两阶段评审未执行 | subagent 工作流未运行 | 以 R1-R6 对齐循环替代 |
+| 无 finishing 分支 | 单分支开发 | 直接 merge 到 main |
+| 无 Pull Request | 个人项目 | SPEC_PROCESS §7 已记录 |
+| commit 未标注 subagent | subagent 工作流未运行 | 对齐循环由人工主导 |
+
+**最终状态**：21 文件 97 测试全部通过，TypeScript 编译零错误，GitLab CI passed。

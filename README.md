@@ -167,7 +167,8 @@ docker run -d -p 3456:3456 -v $(pwd):/workspace -e OPENAI_API_KEY=$OPENAI_API_KE
 - API Key 存储在操作系统钥匙串中（Windows 凭据管理器 / macOS 钥匙串 / Linux Secret Service）
 - 危险命令（rm -rf、DROP TABLE 等）执行前需人工确认
 - 文件操作限定在工作区范围内
-- Key 绝不写入日志或提交到 Git
+- Key 绝不写入日志或提交到 Git（含 `.husky/pre-commit` hook 自动检查）
+- 日志输出前自动脱敏（`sk-***`、`Bearer ***` 替换）
 
 ## 已知限制
 

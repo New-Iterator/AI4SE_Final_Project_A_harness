@@ -214,6 +214,12 @@ SPEC.md 在冷启动条件下足以支撑独立的 Task 实现。Agent 在 2 个
 
 10. **CI Docker 构建**：GitHub Actions 增加每次 push 自动构建 Docker 镜像的步骤，tag 时推送至 GitHub Container Registry。GitLab CI 因 runner 不支持 Docker-in-Docker 仅保留测试和构建阶段。
 
+11. **凭据安全加强**：新增 `zeroKeys()` 方法（内存主动置零）、`sanitizeKey()` 函数（日志脱敏）、`.husky/pre-commit` hook（检查 API Key 模式）。
+
+12. **feedback-demo 完整闭环**：重写为使用 `MockLLMProvider` + `runLoop` 的完整 3 轮 mock LLM 闭环（写 bug 代码 → 测试失败 → 反馈回灌 → 修复 → 通过）。
+
+13. **工作流偏差说明**：因 PLAN 代码精确到"复制粘贴"级别，subagent 驱动开发在 Task 2 后被放弃。git worktrees、两阶段评审、PR 工作流等因此未执行。以 R1-R6 对齐循环替代评审。**
+
 ---
 
 ## 7. CI/CD 与部署过程
@@ -238,7 +244,7 @@ SPEC.md 在冷启动条件下足以支撑独立的 Task 实现。Agent 在 2 个
 
 - **GitLab**（主仓库）：`https://git.nju.edu.cn/Iterator/ai4se_final_project_a_harness`
 - **GitHub**（镜像/部署源）：`https://github.com/New-Iterator/AI4SE_Final_Project_A_harness`
-- **Commit 总数**：14 次，涵盖从脚手架到最终文档的完整开发过程
+- **Commit 总数**：30+ 次，涵盖从脚手架到最终文档的完整开发过程
 - **分支策略**：单 master 分支，无 PR（个人项目）
 
 ---
@@ -293,5 +299,3 @@ SPEC.md 在冷启动条件下足以支撑独立的 Task 实现。Agent 在 2 个
 |------|----------|------|
 | HITLHandler 可注入接口 | §3.4 | 需要重构 loop.ts 核心架构，影响面广 |
 | compressor summarize 模式 | §3.7.2 | 需要 LLM 集成，超出当前 mock 测试范围 |
-| feedback-demo 完整 mock LLM 循环 | §11 | 需要重构 demo 为完整 loop 集成测试 |
-| 凭据 Key 零化/日志脱敏 | §3.10 | 需要全局日志中间件，影响面广 |

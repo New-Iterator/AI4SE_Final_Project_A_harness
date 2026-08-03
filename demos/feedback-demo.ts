@@ -1,5 +1,9 @@
-import { validateFeedback } from '../src/core/feedback';
-import type { ToolResult } from '../src/types';
+import { runLoop } from '../src/core/loop';
+import { MockLLMProvider } from '../src/core/llm/mock';
+import { ToolRegistry } from '../src/tools/registry';
+import { writeFileTool } from '../src/tools/write-file';
+import { shellTool } from '../src/tools/shell';
+import type { Config } from '../src/config/types';
 
 let passed = 0;
 let failed = 0;
@@ -9,40 +13,34 @@ function assert(condition: boolean, name: string): void {
   else { console.log(`  FAIL: ${name}`); failed++; }
 }
 
-console.log('=== 反馈演示 ===');
+async function main() {
+  console.log('=== 反馈闭环演示（mock LLM 完整 3 轮循环）===');
 
-const failResult: ToolResult = {
-  tool: 'run_test',
-  stdout: `FAIL  src/calc.test.ts
-  x multiply(2, 3) should return 6
-    Expected: 6
-    Received: 5
-Tests: 1 failed, 1 total`,
-  stderr: '',
-  exitCode: 1,
-  success: false,
-};
+  const mock = new MockLLMProvider('script', [
+    { inputContains: '反馈闭环演示', response: { content: null, toolCalls: [{ id: 'c1', type: 'function', function: { name: 'write_file', arguments: JSON.stringify({ filePath: 'demo_test.ts', content: 'export function add(a:number,b:number){return a-b}' }) } }], finishReason: 'tool_calls' } },
+    { inputContains: '反馈闭环演示', response: { content: null, toolCalls: [{ id: 'c2', type: 'function', function: { name: 'shell', arguments: JSON.stringify({ command: 'echo [ERROR] Expected:6 Received:5' }) } }], finishReason: 'tool_calls' } },
+    { inputContains: 'Expected:6', response: { content: null, toolCalls: [{ id: 'c3', type: 'function', function: { name: 'write_file', arguments: JSON.stringify({ filePath: 'demo_test.ts', content: 'export function add(a:number,b:number){return a+b}' }) } }], finishReason: 'tool_calls' } },
+    { inputContains: '反馈闭环演示', response: { content: 'STOP', toolCalls: [], finishReason: 'stop' } },
+  ]);
 
-const fb = validateFeedback(failResult);
-assert(fb.verdict === 'fail', 'verdict is fail');
-assert(fb.shouldStop === false, 'shouldStop is false');
-assert(fb.failures !== undefined, 'failures array exists');
-assert(fb.failures!.length > 0, 'failures array is non-empty');
-assert(fb.failures![0].testName.includes('multiply'), 'test name is parsed');
+  const registry = new ToolRegistry();
+  registry.register(writeFileTool);
+  registry.register(shellTool);
 
-const passResult: ToolResult = {
-  tool: 'run_test', stdout: '3 passed, 0 failed', stderr: '', exitCode: 0, success: true,
-};
-const fb2 = validateFeedback(passResult);
-assert(fb2.verdict === 'pass', 'verdict is pass');
-assert(fb2.shouldStop === true, 'shouldStop is true');
+  const config: Config = {
+    llm: { provider: 'mock', model: 'mock', maxTokens: 4096, temperature: 0.1 },
+    loop: { maxIterations: 10, maxContextTokens: 128000, maxConsecutiveFailures: 3 },
+    tools: { workspaceRoot: process.cwd(), allowedCommands: [], blockedPatterns: [] },
+    memory: { sessionDbPath: '.harness/session.db', projectDbPath: '.harness/project.db', workingMemoryRounds: 10, sessionMemoryExpireDays: 30, retrievalTopK: 5 },
+  };
 
-const neutralResult: ToolResult = {
-  tool: 'write_file', stdout: 'ok', stderr: '', exitCode: 0, success: true,
-};
-const fb3 = validateFeedback(neutralResult);
-assert(fb3.verdict === 'neutral', 'verdict is neutral');
-assert(fb3.shouldStop === false, 'shouldStop is false for neutral');
+  const result = await runLoop('反馈闭环演示', config, mock, registry);
 
-console.log(`\n结果: ${passed} 通过, ${failed} 失败`);
-process.exit(failed > 0 ? 1 : 0);
+  assert(result.success === true, '反馈闭环最终成功');
+  assert(result.iterations >= 3, `至少执行了 3 轮（实际 ${result.iterations} 轮）`);
+
+  console.log(`\n结果: ${passed} 通过, ${failed} 失败`);
+  process.exit(failed > 0 ? 1 : 0);
+}
+
+main().catch(err => { console.error(err); process.exit(1); });

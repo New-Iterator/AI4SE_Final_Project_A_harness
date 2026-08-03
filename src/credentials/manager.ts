@@ -77,4 +77,18 @@ export class CredentialManager {
     if (process.env.OPENAI_COMPAT_API_KEY && !keys['openai-compat']) keys['openai-compat'] = process.env.OPENAI_COMPAT_API_KEY;
     return keys;
   }
+
+  zeroKeys(): void {
+    for (const [provider] of this.keys) {
+      this.keys.set(provider, '\0'.repeat(64));
+    }
+    this.keys.clear();
+  }
+}
+
+export function sanitizeKey(text: string): string {
+  return text
+    .replace(/sk-[a-zA-Z0-9\-_]{20,}/g, 'sk-***')
+    .replace(/Bearer\s+[a-zA-Z0-9\-_=]{20,}/g, 'Bearer ***')
+    .replace(/api[_-]?key[=:]\s*[a-zA-Z0-9\-_]{20,}/gi, 'api_key=***');
 }

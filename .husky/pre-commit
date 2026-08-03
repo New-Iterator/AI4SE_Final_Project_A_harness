@@ -1,0 +1,20 @@
+#!/bin/sh
+# 检查 staged 文件中是否包含 API Key 模式
+
+PATTERN="sk-[a-zA-Z0-9]{15,}|Bearer [a-zA-Z0-9\-_=]{15,}|api[_-]?key[=:]\s*[a-zA-Z0-9\-_]{15,}"
+FOUND=0
+
+for FILE in $(git diff --cached --name-only); do
+  if git diff --cached -- "$FILE" | grep -qiE "$PATTERN"; then
+    echo "[ERROR] $FILE 中检测到疑似 API Key，请移除后重新提交"
+    FOUND=1
+  fi
+done
+
+if [ "$FOUND" -eq 1 ]; then
+  echo ""
+  echo "请使用 'harness key set' 安全存储 Key，或将其放入 .env 文件（已加入 .gitignore）"
+  exit 1
+fi
+
+exit 0
