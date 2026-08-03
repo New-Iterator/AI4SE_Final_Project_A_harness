@@ -14,7 +14,7 @@ const DEFAULT_DANGEROUS_PATTERNS: Array<{ name: string; pattern: RegExp }> = [
   { name: 'rm -rf recursive', pattern: /rm\s+-rf\s+\.(\/|$|\s)/ },
   { name: 'DROP TABLE', pattern: /DROP\s+TABLE/i },
   { name: 'DROP DATABASE', pattern: /DROP\s+DATABASE/i },
-  { name: 'git push force', pattern: /git\s+push\s+.*--force.*(main|master)/ },
+  { name: 'git push force', pattern: /git\s+push\s+.*(main|master).*--force|git\s+push\s+.*--force.*(main|master)/ },
   { name: 'curl pipe bash', pattern: /curl.*\|.*(bash|sh|zsh)/ },
   { name: 'eval', pattern: /\beval\s+/ },
   { name: 'sudo', pattern: /\bsudo\s+/ },

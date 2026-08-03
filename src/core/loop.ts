@@ -115,9 +115,15 @@ export async function runLoop(
     }
     if (guardResult.requiresApproval) {
       const approved = await requestApproval(action, guardResult);
-      if (!approved) {
+      if (cancelled) {
+        process.removeListener('SIGINT', sigintHandler);
+        return { success: false, reason: 'cancelled', iterations: i + 1 };
+      }
+      if (approved === false) {
+        const isTimeout = !process.stdin.isTTY;
+        const msg = isTimeout ? `APPROVAL REQUIRED: ${guardResult.reason}. Timeout.` : `APPROVAL REQUIRED: ${guardResult.reason}. User denied.`;
         messages.push({ role: 'assistant', content: null });
-        messages.push({ role: 'tool', content: `需要审批: ${guardResult.reason}。用户已拒绝。`, toolCallId: 'guard' });
+        messages.push({ role: 'tool', content: msg, toolCallId: 'guard' });
         if (memory) memory.record(sessionId, 'hitl_denied', `审批被拒: ${guardResult.reason}`, {}, 'guard,denied');
         const key = makeBlacklistKey(action);
         if (key) {
@@ -134,7 +140,9 @@ export async function runLoop(
     }
 
     const tc = response.toolCalls[0];
-    messages.push({ role: 'assistant', content: null, toolCalls: [tc] });
+    if (tc) {
+      messages.push({ role: 'assistant', content: null, toolCalls: [tc] });
+    }
 
     let toolResult;
     try {
@@ -143,11 +151,11 @@ export async function runLoop(
       toolResult = { tool: action.tool || 'unknown', stdout: '', stderr: err.message, exitCode: 1, success: false };
     }
 
-    messages.push({ role: 'tool', content: toolResult.stdout || toolResult.stderr || '', toolCallId: tc.id });
+    messages.push({ role: 'tool', content: toolResult.stdout || toolResult.stderr || '', toolCallId: tc?.id || 'unknown' });
 
     const feedback = validateFeedback(toolResult);
 
-    if (feedback.verdict === 'pass') {
+    if (feedback.verdict === 'pass' || feedback.shouldStop) {
       if (memory) {
         memory.record(sessionId, 'test_result', `测试通过: ${feedback.summary}`, {}, 'test,pass');
         memory.record(sessionId, 'decision', `会话结束: 测试通过 (${i + 1}轮)`, { iterations: i + 1 }, 'session,end');
@@ -166,7 +174,7 @@ export async function runLoop(
         if (memory) {
           memory.record(sessionId, 'decision', `会话结束: 连续失败 (${i + 1}轮)`, { iterations: i + 1 }, 'session,end');
         }
-        return { success: false, reason: `连续失败 ${config.loop.maxConsecutiveFailures} 次，已停止`, iterations: i + 1 };
+        return { success: false, reason: `连续测试失败 ${consecutiveFailures} 次，提前停机`, iterations: i + 1 };
       }
       const fbMsg = `测试失败: ${feedback.summary}\n${feedback.failures?.map(f => `- ${f.testName}: ${f.error}`).join('\n') || ''}\n请修复代码并重试。`;
       messages.push({ role: 'user', content: fbMsg });
@@ -198,7 +206,7 @@ async function llmChatWithRetry(
       return await llm.chat(request);
     } catch (err: any) {
       lastError = err;
-      const is4xx = err.message?.includes('401') || err.message?.includes('403') || err.message?.includes('404') || err.message?.includes('429');
+      const is4xx = / [45]\d{2} /.test(err.message || '') || err.message?.includes('401') || err.message?.includes('403') || err.message?.includes('404') || err.message?.includes('429');
       if (is4xx) throw err;
       if (attempt < maxRetries - 1) {
         const delay = Math.min(Math.pow(2, attempt) * 1000, 8000);
