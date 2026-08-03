@@ -15,7 +15,10 @@ Harness = 上下文组装器 -> LLM 调用 -> 动作解析器 -> 护栏 -> 执�
 ### npm
 
 ```bash
-npm install -g coding-agent-harness
+# 从本地安装
+npm install -g .
+# 或使用 npm link
+npm link
 ```
 
 ### Docker
@@ -29,6 +32,13 @@ docker run -v $(pwd):/workspace -e OPENAI_API_KEY=$OPENAI_API_KEY coding-agent-h
 
 ```bash
 harness run "实现一个带测试的计算器函数"
+```
+
+### 记忆管理
+
+```bash
+harness memory forget <sessionId>   # 删除指定会话的记忆
+harness memory clean                # 清理过期记忆条目
 ```
 
 ## API Key 配置
@@ -45,7 +55,7 @@ harness key delete openai # 删除指定 Key
 
 ### 环境变量（备选方案）
 
-设置以下环境变量。注意：此方式以明文形式存储在 shell 环境中。
+设置以下环境变量，或在项目根目录创建 `.env` 文件。注意：此方式以明文形式存储。
 
 - `OPENAI_API_KEY`
 - `ANTHROPIC_API_KEY`
@@ -53,13 +63,31 @@ harness key delete openai # 删除指定 Key
 
 ## 配置文件
 
-在项目根目录创建 `.harnessrc.json`：
+在项目根目录创建 `.harnessrc.json`（项目级配置），或在用户主目录创建 `~/.harnessrc.json`（全局配置）。项目级配置会覆盖全局配置。
 
 ```json
 {
-  "llm": { "provider": "openai", "model": "gpt-4o", "maxTokens": 4096 },
-  "loop": { "maxIterations": 50, "maxConsecutiveFailures": 3 },
-  "tools": { "workspaceRoot": "." }
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "maxTokens": 4096,
+    "temperature": 0.7
+  },
+  "loop": {
+    "maxIterations": 50,
+    "maxConsecutiveFailures": 3,
+    "maxContextTokens": 128000
+  },
+  "tools": {
+    "workspaceRoot": "."
+  },
+  "memory": {
+    "sessionDbPath": ".harness/session.db",
+    "projectDbPath": ".harness/project.db",
+    "workingMemoryRounds": 10,
+    "sessionMemoryExpireDays": 30,
+    "retrievalTopK": 5
+  }
 }
 ```
 
@@ -78,10 +106,19 @@ src/
     llm/                - LLM 抽象层（mock、OpenAI、Anthropic、兼容格式）
   memory/               - 记忆系统（L1/L2/L3 三层记忆）
   tools/                - 工具实现（读文件/写文件/shell/运行测试）
+  web/                  - Web 管理面板
   config/               - 配置加载器
   credentials/          - 凭据管理
 tests/                  - 单元测试（mock LLM 驱动）
+  core/                 - 核心模块测试
+  memory/               - 记忆系统测试
+  tools/                - 工具测试
+  config/               - 配置测试
+  credentials/          - 凭据测试
 demos/                  - 机制演示脚本
+  guard-demo.ts         - 护栏演示
+  feedback-demo.ts      - 反馈闭环演示
+  memory-demo.ts        - 记忆系统演示
 ```
 
 ## 测试
