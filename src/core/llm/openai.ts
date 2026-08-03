@@ -1,5 +1,13 @@
 import type { LLMProvider, ChatRequest, ChatResponse } from './types';
 
+const FETCH_TIMEOUT = 30000;
+
+function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeout));
+}
+
 export class OpenAIProvider implements LLMProvider {
   private apiKey: string;
   private model: string;
@@ -26,7 +34,7 @@ export class OpenAIProvider implements LLMProvider {
       temperature: request.temperature,
     };
 
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
+    const response = await fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.apiKey}` },
       body: JSON.stringify(body),

@@ -49,7 +49,7 @@ export class ContextInjector {
         result = this.insertMemoryMessage(result, `项目会话记忆:\n${l2Content}`);
       }
     } catch {
-      // L2 retrieval failed, skip and continue with L3
+      console.warn('[ContextInjector] L2 检索失败，跳过 L2 注入');
     }
 
     try {
@@ -63,7 +63,7 @@ export class ContextInjector {
         result = this.insertMemoryMessage(result, `项目级记忆:\n${l3Content}`);
       }
     } catch {
-      // L3 retrieval failed, only L2 results are injected
+      console.warn('[ContextInjector] L3 检索失败，仅注入 L2 结果');
     }
 
     const estimatedTokens = this.estimateTokens(result);

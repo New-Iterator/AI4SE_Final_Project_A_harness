@@ -94,7 +94,7 @@ export async function runLoop(
     }
 
     const blacklistKey = makeBlacklistKey(action);
-    if (blacklistKey && blacklist.has(blacklistKey)) {
+    if (blacklistKey && (blacklist.get(blacklistKey) || 0) >= 3) {
       messages.push({ role: 'assistant', content: null });
       messages.push({ role: 'tool', content: `BLOCKED: 此动作已被黑名单拦截，请选择其他方式`, toolCallId: 'blacklist' });
       if (memory) memory.record(sessionId, 'guard_block', `黑名单拦截: ${blacklistKey}`, {}, 'blacklist,block');

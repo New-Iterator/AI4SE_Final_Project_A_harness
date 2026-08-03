@@ -10,6 +10,7 @@ export class WorkingMemory {
 
   add(message: Message): void {
     this.messages.push(message);
+    this.messages = this.messages.slice(-this.maxRounds);
   }
 
   getAll(): Message[] {

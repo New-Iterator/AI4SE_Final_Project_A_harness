@@ -1,5 +1,13 @@
 import type { LLMProvider, ChatRequest, ChatResponse } from './types';
 
+const FETCH_TIMEOUT = 30000;
+
+function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeout));
+}
+
 export class AnthropicProvider implements LLMProvider {
   private apiKey: string;
   private model: string;
@@ -22,7 +30,7 @@ export class AnthropicProvider implements LLMProvider {
       ...(request.tools.length > 0 ? { tools: request.tools.map(t => ({ name: t.function.name, description: t.function.description, input_schema: t.function.parameters })) } : {}),
     };
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': this.apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify(body),

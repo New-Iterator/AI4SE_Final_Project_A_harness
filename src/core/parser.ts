@@ -44,7 +44,7 @@ export function parseActionWithWarnings(response: ChatResponse): ParseResult {
     } catch { /* fall through to next rule */ }
   }
 
-  if (/^(STOP|DONE)$/im.test(trimmed)) {
+if (/^(STOP|DONE)$/im.test(trimmed)) {
     return { action: { type: 'stop', reason: trimmed }, warnings };
   }
 

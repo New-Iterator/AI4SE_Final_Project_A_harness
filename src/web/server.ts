@@ -130,6 +130,11 @@ export function startWebServer(port: number, credManager: CredentialManager): vo
     res.end('<h1>404 Not Found</h1>');
   });
 
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    console.error(chalk.red(`[Harness Web] 启动失败: ${err.message}`));
+    process.exit(1);
+  });
+
   server.listen(port, () => {
     console.log(chalk.green(`\n[Harness Web] 管理面板已启动: http://localhost:${port}`));
     console.log(chalk.gray(`[Harness Web] 按 Ctrl+C 停止服务\n`));

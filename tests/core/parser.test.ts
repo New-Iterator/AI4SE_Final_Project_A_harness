@@ -15,11 +15,11 @@ describe('parseAction', () => {
     expect(action.args).toEqual({ path: 'test.ts', content: 'hello' });
   });
 
-  it('should parse stop response with content', () => {
-    const response: ChatResponse = { content: 'Task complete', toolCalls: [], finishReason: 'stop' };
+  it('should parse stop response with DONE keyword', () => {
+    const response: ChatResponse = { content: 'DONE', toolCalls: [], finishReason: 'stop' };
     const action = parseAction(response);
     expect(action.type).toBe('stop');
-    expect(action.reason).toBe('Task complete');
+    expect(action.reason).toBe('DONE');
   });
 
   it('should return invalid for empty response', () => {
