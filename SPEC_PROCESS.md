@@ -212,7 +212,7 @@ SPEC.md 在冷启动条件下足以支撑独立的 Task 实现。Agent 在 2 个
 
 9. **LLM 响应日志**：主循环中增加 `[LLM] 轮次 N: tool_name` 日志输出，方便调试真实 LLM 调用。
 
-10. **CI Docker 构建**：GitHub Actions 和 GitLab CI 均增加每次 push 自动构建 Docker 镜像的步骤，tag 时推送至 GitHub Container Registry。
+10. **CI Docker 构建**：GitHub Actions 增加每次 push 自动构建 Docker 镜像的步骤，tag 时推送至 GitHub Container Registry。GitLab CI 因 runner 不支持 Docker-in-Docker 仅保留测试和构建阶段。
 
 ---
 
@@ -220,7 +220,7 @@ SPEC.md 在冷启动条件下足以支撑独立的 Task 实现。Agent 在 2 个
 
 ### CI/CD 配置
 
-- **GitLab CI**（`.gitlab-ci.yml`）：包含 `unit-test`、`build`、`docker-build` 三个 stage，使用 `node:20` 镜像
+- **GitLab CI**（`.gitlab-ci.yml`）：包含 `unit-test` 和 `build` 两个 stage，使用 `node:20` 镜像
 - **GitHub Actions**（`.github/workflows/ci.yml`）：包含 `test` 和 `docker-build` 两个 job，每次 push 构建 Docker 镜像，tag 时推送 GHCR
 - **首次 CI 运行失败**：Alpine 镜像缺少原生编译工具，导致 `npm ci` 失败
 - **修复后 CI 通过**：切换为 `node:20` 镜像，`unit-test` job（含 `npm ci` + `npm run build` + `npm test`）全部通过

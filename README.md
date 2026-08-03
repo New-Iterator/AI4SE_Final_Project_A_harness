@@ -159,8 +159,8 @@ docker run -d -p 3456:3456 -v $(pwd):/workspace -e OPENAI_API_KEY=$OPENAI_API_KE
 
 项目配置了 GitHub Actions（`.github/workflows/ci.yml`）和 GitLab CI（`.gitlab-ci.yml`），每次 push 自动运行测试、编译和 Docker 镜像构建。
 
-- **GitHub Actions**：`test` + `docker-build` 两个 job，每次 push 构建 Docker 镜像，tag 时自动推送至 GitHub Container Registry
-- **GitLab CI**：`unit-test` + `build` + `docker-build` 三个 stage，使用 node:20 镜像，94 测试全部通过
+- **GitHub Actions**：`test` + `docker-build`，每次 push 构建 Docker 镜像，tag 时推送至 GitHub Container Registry
+- **GitLab CI**：`unit-test` + `build`，使用 node:20 镜像，94 测试全部通过
 
 ## 安全
 
