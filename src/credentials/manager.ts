@@ -34,7 +34,15 @@ export class CredentialManager {
   }
 
   has(provider: string): boolean {
-    return this.keys.has(provider);
+    if (this.keys.has(provider)) return true;
+    if (this.useKeychain) {
+      try {
+        const keytar = require('keytar');
+        const key = keytar.getPassword('coding-agent-harness', provider);
+        return !!key;
+      } catch { return false; }
+    }
+    return false;
   }
 
   async delete(provider: string): Promise<void> {

@@ -230,11 +230,15 @@ tr:hover { background: #1c2128; }
 <script>
 async function loadAll() {
   try {
-    const resp = await fetch('/api/status');
-    const data = await resp.json();
+    const [statusResp, configResp] = await Promise.all([
+      fetch('/api/status'),
+      fetch('/api/config')
+    ]);
+    const data = await statusResp.json();
+    const fullConfig = await configResp.json();
     renderStatus(data);
     renderCredentials(data.credentials);
-    renderConfig(data.config);
+    renderConfig(fullConfig);
   } catch(e) { console.error(e); }
   loadMemory();
 }

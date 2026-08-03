@@ -16,7 +16,7 @@ export const runTestTool: Tool = {
   async execute(args, context) {
     const cmd = (args.command as string) || 'npm test';
     try {
-      const stdout = execSync(cmd, { cwd: context.workspaceRoot, encoding: 'utf-8', timeout: 120000, maxBuffer: 10 * 1024 * 1024 });
+      const stdout = execSync(cmd, { cwd: context.workspaceRoot, encoding: 'utf-8', timeout: 60000, maxBuffer: 10 * 1024 * 1024 });
       return { tool: 'run_test', stdout, stderr: '', exitCode: 0, success: true };
     } catch (err: any) {
       return {

@@ -13,7 +13,7 @@ export function loadConfig(cwd?: string): Config {
         const raw = readFileSync(path, 'utf-8');
         const partial = JSON.parse(raw) as Partial<Config>;
         deepMerge(config as unknown as Record<string, unknown>, partial as unknown as Record<string, unknown>);
-      } catch { /* ignore malformed config */ }
+      } catch { console.warn(`[Config] 无法解析配置文件: ${path}`); }
     }
   }
   return config;

@@ -22,8 +22,12 @@ export async function runLoop(
   }
 
   const sessionId = randomUUID();
+  if (memory) {
+    memory.record(sessionId, 'task', task, {}, 'task,start');
+  }
   const wm = memory?.getWorkingMemory();
   const blacklist = new Map<string, number>();
+  const startTime = Date.now();
 
   let cancelled = false;
   const sigintHandler = () => {
@@ -81,6 +85,7 @@ export async function runLoop(
     if (action.type === 'stop') {
       if (memory) {
         memory.record(sessionId, 'decision', `任务完成: ${action.reason || 'Task completed'}`, {}, 'task,complete');
+        memory.record(sessionId, 'decision', `会话结束: 成功 (${i + 1}轮)`, { iterations: i + 1 }, 'session,end');
       }
       process.removeListener('SIGINT', sigintHandler);
       return { success: true, reason: action.reason || '任务完成', iterations: i + 1 };
@@ -145,6 +150,7 @@ export async function runLoop(
     if (feedback.verdict === 'pass') {
       if (memory) {
         memory.record(sessionId, 'test_result', `测试通过: ${feedback.summary}`, {}, 'test,pass');
+        memory.record(sessionId, 'decision', `会话结束: 测试通过 (${i + 1}轮)`, { iterations: i + 1 }, 'session,end');
       }
       process.removeListener('SIGINT', sigintHandler);
       return { success: true, reason: feedback.summary, iterations: i + 1 };
@@ -157,6 +163,9 @@ export async function runLoop(
       }
       if (consecutiveFailures >= config.loop.maxConsecutiveFailures) {
         process.removeListener('SIGINT', sigintHandler);
+        if (memory) {
+          memory.record(sessionId, 'decision', `会话结束: 连续失败 (${i + 1}轮)`, { iterations: i + 1 }, 'session,end');
+        }
         return { success: false, reason: `连续失败 ${config.loop.maxConsecutiveFailures} 次，已停止`, iterations: i + 1 };
       }
       const fbMsg = `测试失败: ${feedback.summary}\n${feedback.failures?.map(f => `- ${f.testName}: ${f.error}`).join('\n') || ''}\n请修复代码并重试。`;
@@ -167,6 +176,9 @@ export async function runLoop(
   }
 
   process.removeListener('SIGINT', sigintHandler);
+  if (memory) {
+    memory.record(sessionId, 'decision', `会话结束: 达到最大迭代次数 (${config.loop.maxIterations}次)`, { iterations: config.loop.maxIterations }, 'session,end');
+  }
   return { success: false, reason: '达到最大迭代次数', iterations: config.loop.maxIterations };
 }
 
@@ -175,8 +187,13 @@ async function llmChatWithRetry(
   request: { messages: Message[]; tools: ToolDefinition[]; maxTokens?: number; temperature?: number },
   maxRetries: number = 3
 ): Promise<ChatResponse> {
+  const totalStart = Date.now();
+  const TOTAL_TIMEOUT = 30000;
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (Date.now() - totalStart > TOTAL_TIMEOUT) {
+      throw new Error('LLM 调用总超时 30s');
+    }
     try {
       return await llm.chat(request);
     } catch (err: any) {
@@ -193,6 +210,10 @@ async function llmChatWithRetry(
 }
 
 async function requestApproval(action: any, guardResult: { reason?: string }): Promise<boolean> {
+  if (!process.stdin.isTTY) {
+    return false;
+  }
+
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   console.log(`\n⚠ 危险动作需要审批:`);
   console.log(`  工具: ${action.tool}`);
