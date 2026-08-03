@@ -53,4 +53,17 @@ Tests: 1 passed, 1 failed, 2 total`;
     const fb = validateFeedback(result);
     expect(fb.verdict).toBe('neutral');
   });
+
+  it('should parse Vitest output', () => {
+    const stdout = ` FAIL  src/calc.test.ts > Calculator > multiply(2, 3) should return 6
+AssertionError: expected 5 to be 6
+ - Expected   "6"
+ + Received   "5"
+Tests: 1 failed, 1 total`;
+    const result: ToolResult = { tool: 'run_test', stdout, stderr: '', exitCode: 1, success: false };
+    const fb = validateFeedback(result);
+    expect(fb.verdict).toBe('fail');
+    expect(fb.failures).toBeDefined();
+    expect(fb.failures!.length).toBeGreaterThan(0);
+  });
 });

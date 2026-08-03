@@ -86,4 +86,46 @@ describe('checkGuard', () => {
     expect(result.blocked).toBe(false);
     expect(result.requiresApproval).toBe(false);
   });
+
+  it('should flag rm -rf /*', () => {
+    const action: Action = { type: 'tool_call', tool: 'shell', args: { command: 'rm -rf /*' } };
+    const result = checkGuard(action, '/workspace');
+    expect(result.requiresApproval).toBe(true);
+  });
+
+  it('should flag rm -rf ~', () => {
+    const action: Action = { type: 'tool_call', tool: 'shell', args: { command: 'rm -rf ~' } };
+    const result = checkGuard(action, '/workspace');
+    expect(result.requiresApproval).toBe(true);
+  });
+
+  it('should flag rm -rf .', () => {
+    const action: Action = { type: 'tool_call', tool: 'shell', args: { command: 'rm -rf .' } };
+    const result = checkGuard(action, '/workspace');
+    expect(result.requiresApproval).toBe(true);
+  });
+
+  it('should flag DROP DATABASE', () => {
+    const action: Action = { type: 'tool_call', tool: 'shell', args: { command: 'DROP DATABASE production' } };
+    const result = checkGuard(action, '/workspace');
+    expect(result.requiresApproval).toBe(true);
+  });
+
+  it('should flag eval', () => {
+    const action: Action = { type: 'tool_call', tool: 'shell', args: { command: 'eval $(cat /etc/passwd)' } };
+    const result = checkGuard(action, '/workspace');
+    expect(result.requiresApproval).toBe(true);
+  });
+
+  it('should flag sudo', () => {
+    const action: Action = { type: 'tool_call', tool: 'shell', args: { command: 'sudo rm -rf /tmp' } };
+    const result = checkGuard(action, '/workspace');
+    expect(result.requiresApproval).toBe(true);
+  });
+
+  it('should flag fork bomb', () => {
+    const action: Action = { type: 'tool_call', tool: 'shell', args: { command: ':(){ :|:& };:' } };
+    const result = checkGuard(action, '/workspace');
+    expect(result.requiresApproval).toBe(true);
+  });
 });
