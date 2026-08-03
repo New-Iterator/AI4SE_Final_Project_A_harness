@@ -3,25 +3,42 @@ import type { Message } from '../types';
 const CHARS_PER_TOKEN = 4;
 
 export class Compressor {
-  compress(messages: Message[], maxTokens: number, mode: 'truncate' | 'summarize'): Message[] {
+  compress(
+    messages: Message[],
+    maxTokens: number,
+    mode: 'truncate' | 'summarize',
+    workingMemoryRounds: number = 10
+  ): Message[] {
     const maxChars = maxTokens * CHARS_PER_TOKEN;
     const currentChars = estimateTokens(messages) * CHARS_PER_TOKEN;
     if (currentChars <= maxChars) return messages;
 
-    return this.compressTruncate(messages, maxChars);
+    if (mode === 'summarize') {
+      return this.compressTruncate(messages, maxChars, workingMemoryRounds);
+    }
+
+    return this.compressTruncate(messages, maxChars, workingMemoryRounds);
   }
 
-  private compressTruncate(messages: Message[], maxChars: number): Message[] {
+  private compressTruncate(messages: Message[], maxChars: number, workingMemoryRounds: number): Message[] {
     const systemMsg = messages.find(m => m.role === 'system');
     const nonSystem = messages.filter(m => m.role !== 'system');
-    const keepLast = Math.max(2, Math.floor(nonSystem.length / 2));
+    const keepLast = Math.max(2, workingMemoryRounds);
 
     const result: Message[] = [];
-    if (systemMsg) result.push(systemMsg);
+
+    if (systemMsg) {
+      const sysContent = systemMsg.content || '';
+      if (sysContent.length > maxChars) {
+        result.push({ role: 'system', content: sysContent.slice(0, maxChars) + '...(truncated)' });
+      } else {
+        result.push(systemMsg);
+      }
+    }
 
     const leading = nonSystem.slice(0, nonSystem.length - keepLast);
     if (leading.length > 0) {
-      result.push({ role: 'system', content: '...[更早的消息已截断]...' });
+      result.push({ role: 'system', content: '...[earlier messages truncated]...' });
     }
 
     result.push(...nonSystem.slice(-keepLast));

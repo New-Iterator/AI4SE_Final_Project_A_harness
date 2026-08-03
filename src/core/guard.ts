@@ -9,8 +9,9 @@ export interface GuardResult {
 
 const DEFAULT_DANGEROUS_PATTERNS: Array<{ name: string; pattern: RegExp }> = [
   { name: 'rm -rf root', pattern: /rm\s+-rf\s+\/(\*|$|\s)/ },
-  { name: 'rm -rf home', pattern: /rm\s+-rf\s+~/ },
-  { name: 'rm -rf recursive', pattern: /rm\s+-rf\s+\./ },
+  { name: 'rm -rf home', pattern: /rm\s+-rf\s+~(\/|$|\s)/ },
+  { name: 'rm -rf home wildcard', pattern: /rm\s+-rf\s+~\/\*/ },
+  { name: 'rm -rf recursive', pattern: /rm\s+-rf\s+\.(\/|$|\s)/ },
   { name: 'DROP TABLE', pattern: /DROP\s+TABLE/i },
   { name: 'DROP DATABASE', pattern: /DROP\s+DATABASE/i },
   { name: 'git push force', pattern: /git\s+push\s+.*--force.*(main|master)/ },

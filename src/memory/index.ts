@@ -33,7 +33,8 @@ export class MemoryManager {
       this.projectRetriever,
       this.embeddingProvider,
       this.workingMemory,
-      maxContextTokens
+      maxContextTokens,
+      config.workingMemoryRounds
     );
     this.compressor = new Compressor();
     this.expireDays = config.sessionMemoryExpireDays;

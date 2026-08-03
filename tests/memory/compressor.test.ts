@@ -21,8 +21,8 @@ describe('Compressor', () => {
       { role: 'assistant', content: 'B'.repeat(2000) },
       { role: 'user', content: 'Recent message' },
     ];
-    const result = compressor.compress(messages, 10, 'truncate');
-    const hasMarker = result.some(m => m.role === 'system' && m.content?.includes('截断'));
+    const result = compressor.compress(messages, 10, 'truncate', 1);
+    const hasMarker = result.some(m => m.role === 'system' && m.content?.includes('truncated'));
     expect(hasMarker).toBe(true);
     expect(result[0].content).toBe('System prompt');
     expect(result[result.length - 1].content).toBe('Recent message');
@@ -37,8 +37,8 @@ describe('Compressor', () => {
       { role: 'user', content: 'C'.repeat(2000) },
       { role: 'user', content: 'Last message' },
     ];
-    const result = compressor.compress(messages, 10, 'truncate');
-    const hasMarker = result.some(m => m.role === 'system' && m.content?.includes('截断'));
+    const result = compressor.compress(messages, 10, 'truncate', 1);
+    const hasMarker = result.some(m => m.role === 'system' && m.content?.includes('truncated'));
     expect(hasMarker).toBe(true);
   });
 });

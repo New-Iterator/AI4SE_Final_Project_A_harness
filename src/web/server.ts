@@ -61,6 +61,13 @@ export function startWebServer(port: number, credManager: CredentialManager): vo
       return;
     }
 
+    if (path === '/api/credentials') {
+      const credStatus = await credManager.status();
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.end(JSON.stringify({ credentials: credStatus }));
+      return;
+    }
+
     if (path === '/api/memory') {
       try {
         const memory = new MemoryManager({
