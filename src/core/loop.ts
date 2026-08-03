@@ -86,7 +86,8 @@ export async function runLoop(
     }
 
     if (action.tool === 'read_file' || action.tool === 'write_file') {
-      currentFilePath = action.args?.path || action.args?.filePath || currentFilePath;
+      const args = action.args as any;
+      currentFilePath = args?.path || args?.filePath || currentFilePath;
     }
 
     const tc = response.toolCalls[0];
