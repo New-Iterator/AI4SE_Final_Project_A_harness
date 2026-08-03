@@ -1,6 +1,7 @@
 stages:
   - test
   - build
+  - docker
 
 unit-test:
   stage: test
@@ -29,3 +30,13 @@ build:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
       - node_modules/
+
+docker-build:
+  stage: docker
+  image: docker:latest
+  services:
+    - docker:dind
+  needs:
+    - build
+  script:
+    - docker build -t coding-agent-harness .
