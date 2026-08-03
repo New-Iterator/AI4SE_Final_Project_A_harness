@@ -89,7 +89,14 @@ LLM 只能"决定下一步做什么"，但无法自主作用于外部世界。�
 
 **输出**：`Action { type: 'tool_call' | 'stop' | 'invalid'; tool?: string; args?: Record<string,unknown>; reason?: string }`
 
-**边界条件**：空响应 → invalid；JSON 解析失败 → invalid
+**纯文本 fallback 解析规则**（best-effort）：
+- 若 LLM 响应中无 `tool_calls` 字段，尝试从纯文本中提取结构化动作：
+  1. 匹配 JSON 代码块（` ```json ... ``` `）→ 尝试解析为 `{ tool, args }` 格式
+  2. 匹配关键字 `STOP` 或 `DONE`（不区分大小写）→ 识别为 `stop` 动作
+  3. 匹配模式 `tool_name(args)`（如 `write_file("path", "content")`）→ 尝试提取工具名和参数
+- 以上均失败 → `type: 'invalid'`，原文本作为 `reason` 字段返回
+
+**边界条件**：空响应 → invalid；JSON 解析失败 → invalid；匹配到多个工具调用 → 仅取第一个
 
 ### 3.4 护栏系统 (`src/core/guard.ts`)
 
@@ -135,6 +142,11 @@ LLM 只能"决定下一步做什么"，但无法自主作用于外部世界。�
 - 用户在 WAITING 状态下按 Ctrl+C → 终止整个 loop，返回 cancelled 结果
 - 连续 3 次被拒绝的同类动作 → 自动加入黑名单，本轮不再触发 HITL（直接 block）
 - 非交互式环境（无 TTY）→ 自动拒绝，不等待用户输入
+
+**"同类动作"判定规则**：两条动作视为同类当且仅当满足以下条件之一：
+- 相同 `tool` 且相同 `command`（shell 工具）——精确字符串匹配
+- 相同 `tool` 且相同 `filePath`（read_file / write_file 工具）——精确字符串匹配
+- 相同 `tool` 且 `args` 的 JSON 序列化结果相同
 
 ### 3.5 动作执行器 (`src/core/executor.ts`)
 
@@ -558,7 +570,7 @@ interface ProjectMemoryEntry {
   type: 'file_summary' | 'module_summary' | 'fix_pattern';
   path: string;          // 关联的文件/模块路径
   content: string;       // 摘要文本
-  embedding: Float32Array; // 向量（维度取决于 embedding 模型）
+  embedding: Float32Array; // 向量（维度取决于 embedding 模型），持久化到 SQLite 时转为 BLOB（Buffer.from(embedding.buffer)），读取时从 BLOB 还原为 Float32Array
   timestamp: number;
 }
 ```
@@ -621,8 +633,9 @@ interface TestFailure {
 | 主循环 | mock LLM 下完成 3 轮迭代（读文件→写文件→运行测试），测试通过后停机 |
 | 护栏 | 传入 `shell: "rm -rf /"` 被拦截并提示审批；传入正常命令放行 |
 | 反馈闭环 | 注入测试失败，agent 下一轮动作包含修正代码的 write_file |
+| 连续失败中止 | mock LLM 连续 3 次返回测试失败，loop 在达到 maxIterations 前提前停机，reason 包含"连续失败" |
 | 记忆（L2） | 会话结束后，新会话能检索到上次会话的项目约定 |
-| 记忆（L3） | 项目初始化后，能检索到与当前任务相关的代码文件摘要 |
+| 记忆（L3） | 单元测试：使用 mock 随机向量验证余弦相似度检索逻辑（插入已知向量→检索→断言 top-K 结果正确）；集成测试（可选）：使用真实 embedding API 验证端到端流程 |
 | 多供应商 | 切换配置中的 provider 字段，能分别调用 OpenAI 和 Anthropic |
 | 凭据安全 | `harness key set` 录入，`harness key status` 不显示明文，key 不在源码中 |
 | 分发 | `docker build && docker run` 可运行；`npm install -g` 可运行 |
@@ -733,9 +746,16 @@ Render Cloud
 └── Public URL: https://<app-name>.onrender.com
 ```
 
-**线上访问**：Web 管理面板通过 Render 提供的公网 URL 访问，支持 HTTPS。
+**线上访问**：Web 管理面板通过 Render 提供的公网 URL 访问，支持 HTTPS。部署到云端的 Web 面板主要用于以下场景：
+- **Demo 展示**：向评审者展示项目功能和架构，无需本地安装
+- **远程管理**：若团队共享一个 Harness 实例，可通过 Web 面板查看运行状态和记忆
+- **本地使用**：开发者在本地通过 `harness web` 启动，访问 `http://localhost:3456` 查看本地工作区配置和记忆
 
-**已知限制**：Render 免费版在 15 分钟无流量后自动休眠，首次访问需等待 1-2 分钟唤醒。
+**验收标准**：本地 `harness web` 可正常访问 `localhost:3456` 即视为满足 WebUI 要求。Render 部署作为加分项，展示项目可部署性。
+
+**已知限制**：Render 免费版在 15 分钟无流量后自动休眠，首次访问需等待 1-2 分钟唤醒。云端部署的 Web 面板无法访问本地工作区文件，如需查看实际配置和记忆，请在本地运行 `harness web`。
+
+**本地 vs 云端**：Web 面板的核心使用场景是本地 `harness web`（`localhost:3456`）。Render 部署主要用于展示项目可部署性和 Demo 用途，不作为日常使用的 WebUI 入口。
 
 **备选平台**：Railway、Vercel（需配置 serverless 适配）、阿里云 ECS、腾讯云 CloudBase。
 
