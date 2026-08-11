@@ -57,10 +57,16 @@ export class CredentialManager {
 
   async status(): Promise<Record<string, 'configured' | 'not configured'>> {
     const providers = ['openai', 'anthropic', 'openai-compat'];
+    const envMap: Record<string, string> = {
+      openai: 'OPENAI_API_KEY',
+      anthropic: 'ANTHROPIC_API_KEY',
+      'openai-compat': 'OPENAI_COMPAT_API_KEY',
+    };
     const result: Record<string, 'configured' | 'not configured'> = {};
     for (const p of providers) {
       const key = await this.get(p);
-      result[p] = key ? 'configured' : 'not configured';
+      const envKey = process.env[envMap[p]];
+      result[p] = (key || envKey) ? 'configured' : 'not configured';
     }
     return result;
   }
