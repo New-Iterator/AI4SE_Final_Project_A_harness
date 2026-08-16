@@ -137,7 +137,12 @@ export function startWebServer(port: number, credManager: CredentialManager): vo
     if (path === '/api/config') {
       try {
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.end(JSON.stringify(config));
+        res.end(JSON.stringify({
+          llm: config.llm,
+          loop: config.loop,
+          tools: config.tools,
+          memory: config.memory,
+        }));
       } catch {
         res.statusCode = 500;
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -230,16 +235,16 @@ tr:hover { background: #1c2128; }
 <script>
 async function loadAll() {
   try {
-    const [statusResp, configResp] = await Promise.all([
-      fetch('/api/status'),
-      fetch('/api/config')
-    ]);
-    const data = await statusResp.json();
-    const fullConfig = await configResp.json();
+    var statusResp = await fetch('/api/status');
+    var data = await statusResp.json();
     renderStatus(data);
     renderCredentials(data.credentials);
-    renderConfig(fullConfig);
   } catch(e) { console.error(e); }
+  try {
+    var configResp = await fetch('/api/config');
+    var fullConfig = await configResp.json();
+    renderConfig(fullConfig);
+  } catch(e) { renderConfig({}); }
   loadMemory();
 }
 async function loadMemory() {
@@ -286,19 +291,24 @@ function renderCredentials(creds) {
   }).join('');
 }
 function renderConfig(config) {
+  var c = config || {};
+  var llm = c.llm || {};
+  var loop = c.loop || {};
+  var tools = c.tools || {};
+  var mem = c.memory || {};
   document.getElementById('config-content').innerHTML = [
-    ['LLM Provider', config.llm?.provider],
-    ['Model', config.llm?.model],
-    ['Max Tokens', config.llm?.maxTokens],
-    ['Temperature', config.llm?.temperature],
-    ['Max Iterations', config.loop?.maxIterations],
-    ['Max Context Tokens', config.loop?.maxContextTokens],
-    ['Max Consecutive Failures', config.loop?.maxConsecutiveFailures],
-    ['Workspace Root', config.tools?.workspaceRoot],
-    ['Working Memory Rounds', config.memory?.workingMemoryRounds],
-    ['Session DB', config.memory?.sessionDbPath],
-    ['Project DB', config.memory?.projectDbPath],
-  ].map(([l, v]) => '<div class="stat-row"><span class="stat-label">'+l+'</span><span class="stat-value">'+v+'</span></div>').join('');
+    ['LLM Provider', llm.provider || 'N/A'],
+    ['Model', llm.model || 'N/A'],
+    ['Max Tokens', llm.maxTokens || 'N/A'],
+    ['Temperature', llm.temperature || 'N/A'],
+    ['Max Iterations', loop.maxIterations || 'N/A'],
+    ['Max Context Tokens', loop.maxContextTokens || 'N/A'],
+    ['Max Consecutive Failures', loop.maxConsecutiveFailures || 'N/A'],
+    ['Workspace Root', tools.workspaceRoot || 'N/A'],
+    ['Working Memory Rounds', mem.workingMemoryRounds || 'N/A'],
+    ['Session DB', mem.sessionDbPath || 'N/A'],
+    ['Project DB', mem.projectDbPath || 'N/A'],
+  ].map(function(r) { return '<div class="stat-row"><span class="stat-label">'+r[0]+'</span><span class="stat-value">'+r[1]+'</span></div>'; }).join('');
 }
 function renderMemory(data) {
   document.getElementById('memory-content').innerHTML = '<p style="color:#8b949e;font-size:13px;margin-bottom:8px">L2 会话记忆: '+(data.count||0)+' 条 | L3 项目记忆: '+(data.l3Count||0)+' 条</p>' + (data.entries && data.entries.length > 0 ? '<table><thead><tr><th>类型</th><th>内容</th><th>关键词</th><th>时间</th><th>置信度</th><th>SessionId</th></tr></thead><tbody>'+data.entries.map(e => '<tr><td>'+e.type+'</td><td>'+e.content+'</td><td>'+e.keywords+'</td><td>'+new Date(e.timestamp).toLocaleString()+'</td><td>'+(e.confidence*100).toFixed(0)+'%</td><td style="font-size:11px;color:#8b949e">'+e.sessionId+'</td></tr>').join('')+'</tbody></table>' : '<p style="color:#8b949e;font-size:13px">暂无记忆条目</p>');
