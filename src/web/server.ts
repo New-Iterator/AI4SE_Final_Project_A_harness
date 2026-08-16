@@ -221,7 +221,7 @@ tr:hover { background: #1c2128; }
 <body>
 <div class="header">
   <h1>Coding Agent Harness</h1>
-  <p>管理面板 - 会话监控 / 记忆管理 / 配置查看</p>
+  <p>管理面板 - 会话监控 / 记忆管理 / 配置查看 <span style="color:#3fb950">v2</span></p>
 </div>
 <div class="container">
   <div class="card">
