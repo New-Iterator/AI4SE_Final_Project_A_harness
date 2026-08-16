@@ -51,14 +51,28 @@ export function startWebServer(port: number, credManager: CredentialManager): vo
     if (path === '/api/status') {
       try {
         const credStatus = await credManager.status();
-        const configSummary = {
-          provider: config.llm.provider,
-          model: config.llm.model,
-          maxIterations: config.loop.maxIterations,
-          workspaceRoot: config.tools.workspaceRoot,
-        };
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.end(JSON.stringify({ credentials: credStatus, config: configSummary, uptime: process.uptime() }));
+        res.end(JSON.stringify({
+          credentials: credStatus,
+          config: {
+            provider: config.llm.provider,
+            model: config.llm.model,
+            maxTokens: config.llm.maxTokens,
+            temperature: config.llm.temperature,
+            maxIterations: config.loop.maxIterations,
+            maxContextTokens: config.loop.maxContextTokens,
+            maxConsecutiveFailures: config.loop.maxConsecutiveFailures,
+            workspaceRoot: config.tools.workspaceRoot,
+            allowedCommands: config.tools.allowedCommands,
+            blockedPatterns: config.tools.blockedPatterns,
+            sessionDbPath: config.memory.sessionDbPath,
+            projectDbPath: config.memory.projectDbPath,
+            workingMemoryRounds: config.memory.workingMemoryRounds,
+            sessionMemoryExpireDays: config.memory.sessionMemoryExpireDays,
+            retrievalTopK: config.memory.retrievalTopK,
+          },
+          uptime: process.uptime(),
+        }));
       } catch {
         res.statusCode = 500;
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -239,12 +253,8 @@ async function loadAll() {
     var data = await statusResp.json();
     renderStatus(data);
     renderCredentials(data.credentials);
+    renderConfig(data.config);
   } catch(e) { console.error(e); }
-  try {
-    var configResp = await fetch('/api/config');
-    var fullConfig = await configResp.json();
-    renderConfig(fullConfig);
-  } catch(e) { renderConfig({}); }
   loadMemory();
 }
 async function loadMemory() {
@@ -292,22 +302,18 @@ function renderCredentials(creds) {
 }
 function renderConfig(config) {
   var c = config || {};
-  var llm = c.llm || {};
-  var loop = c.loop || {};
-  var tools = c.tools || {};
-  var mem = c.memory || {};
   document.getElementById('config-content').innerHTML = [
-    ['LLM Provider', llm.provider || 'N/A'],
-    ['Model', llm.model || 'N/A'],
-    ['Max Tokens', llm.maxTokens || 'N/A'],
-    ['Temperature', llm.temperature || 'N/A'],
-    ['Max Iterations', loop.maxIterations || 'N/A'],
-    ['Max Context Tokens', loop.maxContextTokens || 'N/A'],
-    ['Max Consecutive Failures', loop.maxConsecutiveFailures || 'N/A'],
-    ['Workspace Root', tools.workspaceRoot || 'N/A'],
-    ['Working Memory Rounds', mem.workingMemoryRounds || 'N/A'],
-    ['Session DB', mem.sessionDbPath || 'N/A'],
-    ['Project DB', mem.projectDbPath || 'N/A'],
+    ['LLM Provider', c.provider || 'N/A'],
+    ['Model', c.model || 'N/A'],
+    ['Max Tokens', c.maxTokens || 'N/A'],
+    ['Temperature', c.temperature || 'N/A'],
+    ['Max Iterations', c.maxIterations || 'N/A'],
+    ['Max Context Tokens', c.maxContextTokens || 'N/A'],
+    ['Max Consecutive Failures', c.maxConsecutiveFailures || 'N/A'],
+    ['Workspace Root', c.workspaceRoot || 'N/A'],
+    ['Working Memory Rounds', c.workingMemoryRounds || 'N/A'],
+    ['Session DB', c.sessionDbPath || 'N/A'],
+    ['Project DB', c.projectDbPath || 'N/A'],
   ].map(function(r) { return '<div class="stat-row"><span class="stat-label">'+r[0]+'</span><span class="stat-value">'+r[1]+'</span></div>'; }).join('');
 }
 function renderMemory(data) {
